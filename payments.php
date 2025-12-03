@@ -29,7 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if ($action === 'add') {
     // Fetch active memberships for the dropdown
     $stmt = $pdo->query("
-        SELECT m.MembershipID, CONCAT(mem.FirstName, ' ', mem.LastName, ' - ', p.PlanName) AS Details
+        SELECT m.MembershipID,
+            CONCAT(
+                mem.FirstName, ' ', mem.LastName,
+                ' - ', p.PlanName, ' (', p.Duration, ')',
+                ' - ₱', FORMAT(p.Rate, 2)
+            ) AS Details
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
         JOIN Plan p ON m.PlanID = p.PlanID

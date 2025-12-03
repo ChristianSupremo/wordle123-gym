@@ -13,6 +13,16 @@ check_login();
  $stmt = $pdo->query("SELECT COUNT(*) as total_staff FROM Staff WHERE Status = 'Active'");
  $total_staff = $stmt->fetch()['total_staff'];
 
+// Monthly Revenue (Current Month)
+ $stmt = $pdo->query("
+    SELECT SUM(AmountPaid) AS monthly_revenue
+    FROM Payment
+    WHERE MONTH(PaymentDate) = MONTH(CURRENT_DATE())
+      AND YEAR(PaymentDate) = YEAR(CURRENT_DATE())
+      AND PaymentStatus = 'Completed'
+");
+$monthly_revenue = $stmt->fetch()['monthly_revenue'] ?? 0;
+
 // Fetch recent payments
  $stmt = $pdo->query("
     SELECT p.PaymentDate, p.AmountPaid, m.FirstName, m.LastName
@@ -57,8 +67,7 @@ check_login();
         <div class="card text-white bg-warning mb-3">
             <div class="card-body">
                 <h5 class="card-title">Total Revenue (This Month)</h5>
-                <!-- TODO: Add query for monthly revenue -->
-                <p class="card-text display-4">₱0</p>
+                <p class="card-text display-4">₱<?php echo number_format($monthly_revenue, 2); ?></p>
             </div>
         </div>
     </div>

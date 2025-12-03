@@ -3,8 +3,8 @@ require_once 'config/db.php';
 require_once 'includes/functions.php';
 check_login();
 
- $action = $_GET['action'] ?? 'list';
- $member_id = $_GET['id'] ?? null;
+$action = $_GET['action'] ?? 'list';
+$member_id = $_GET['id'] ?? null;
 
 // --- Handle Form Submissions ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -18,20 +18,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($firstName && $lastName && $email) {
         if ($member_id) {
             // Update existing member
-            $sql = "UPDATE Member SET FirstName=?, LastName=?, Address=?, City=?, Province=?, Zipcode=?, Gender=?, DateOfBirth=?, PhoneNo=?, Email=?, EmergencyContactName=?, EmergencyContactNumber=?, MembershipStatus=? WHERE MemberID=?";
+            $sql = "UPDATE Member 
+                    SET FirstName=?, LastName=?, Address=?, City=?, Province=?, Zipcode=?, 
+                        Gender=?, DateOfBirth=?, PhoneNo=?, Email=?, 
+                        EmergencyContactName=?, EmergencyContactNumber=?, MembershipStatus=? 
+                    WHERE MemberID=?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                $firstName, $lastName, $_POST['Address'], $_POST['City'], $_POST['Province'], $_POST['Zipcode'], $_POST['Gender'], $_POST['DateOfBirth'], $_POST['PhoneNo'], $email, $_POST['EmergencyContactName'], $_POST['EmergencyContactNumber'], $_POST['MembershipStatus'], $member_id
+                $firstName,
+                $lastName,
+                $_POST['Address'],
+                $_POST['City'],
+                $_POST['Province'],
+                $_POST['Zipcode'],
+                $_POST['Gender'],
+                $_POST['DateOfBirth'],
+                $_POST['PhoneNo'],
+                $email,
+                $_POST['EmergencyContactName'],
+                $_POST['EmergencyContactNumber'],
+                $_POST['MembershipStatus'],
+                $member_id
             ]);
             $_SESSION['message'] = "Member updated successfully!";
         } else {
             // Add new member
             $sql = "INSERT INTO Member 
-            (FirstName, LastName, Address, City, Province, Zipcode, Gender, DateOfBirth, PhoneNo, Email, JoinDate, EmergencyContactName, EmergencyContactNumber, MembershipStatus) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, 'Pending')";
+                    (FirstName, LastName, Address, City, Province, Zipcode, Gender, 
+                     DateOfBirth, PhoneNo, Email, JoinDate, 
+                     EmergencyContactName, EmergencyContactNumber, MembershipStatus) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, 'Pending')";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                $firstName, $lastName, $_POST['Address'], $_POST['City'], $_POST['Province'], $_POST['Zipcode'], $_POST['Gender'], $_POST['DateOfBirth'], $_POST['PhoneNo'], $email, $_POST['EmergencyContactName'], $_POST['EmergencyContactNumber']
+                $firstName,
+                $lastName,
+                $_POST['Address'],
+                $_POST['City'],
+                $_POST['Province'],
+                $_POST['Zipcode'],
+                $_POST['Gender'],
+                $_POST['DateOfBirth'],
+                $_POST['PhoneNo'],
+                $email,
+                $_POST['EmergencyContactName'],
+                $_POST['EmergencyContactNumber']
             ]);
             $_SESSION['message'] = "New member added successfully!";
         }
@@ -41,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $_SESSION['message'] = "Please fill in all required fields.";
         $_SESSION['message_type'] = "error";
-        // If editing, redirect back to the edit page with the ID
         if ($member_id) {
             header("Location: members.php?action=edit&id=$member_id");
         } else {
@@ -66,17 +95,28 @@ if ($action === 'edit' && $member_id) {
 } elseif ($action === 'add') {
     // Set up empty member object for the form
     $member = [
-        'MemberID' => null, 'FirstName' => '', 'LastName' => '', 'Address' => '', 'City' => '',
-        'Province' => '', 'Zipcode' => '', 'Gender' => 'Male', 'DateOfBirth' => '',
-        'PhoneNo' => '', 'Email' => '', 'EmergencyContactName' => '', 'EmergencyContactNumber' => '',
+        'MemberID' => null,
+        'FirstName' => '',
+        'LastName' => '',
+        'Address' => '',
+        'City' => '',
+        'Province' => '',
+        'Zipcode' => '',
+        'Gender' => 'Male',
+        'DateOfBirth' => '',
+        'PhoneNo' => '',
+        'Email' => '',
+        'EmergencyContactName' => '',
+        'EmergencyContactNumber' => '',
         'MembershipStatus' => 'Pending'
     ];
 }
 
 // If action is list or anything else, show the list of members
 if ($action === 'list') {
-    // --- CHANGE: Add filtering logic ---
-    $status_filter = $_GET['status_filter'] ?? 'Active'; // Default to showing Active members
+    // Default to showing ALL members now
+    $status_filter = $_GET['status_filter'] ?? 'All';
+    $search = trim($_GET['search'] ?? '');
 
     // Base query
     $sql = "
@@ -84,15 +124,28 @@ if ($action === 'list') {
         FROM Member 
         WHERE 1=1
     ";
-    
-    // Add filter condition if not 'All'
+
     $params = [];
+
+    // Status filter (if not All)
     if ($status_filter !== 'All') {
         $sql .= " AND MembershipStatus = ?";
         $params[] = $status_filter;
     }
-    
-    $sql .= " ORDER BY LastName";
+
+    // Name search filter
+    if ($search !== '') {
+        $sql .= " AND (FirstName LIKE ? 
+                       OR LastName LIKE ? 
+                       OR CONCAT(FirstName, ' ', LastName) LIKE ?)";
+        $like = '%' . $search . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    // Sort alphabetically by LastName then FirstName
+    $sql .= " ORDER BY LastName, FirstName";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -106,21 +159,32 @@ if ($action === 'list') {
 <?php if ($action === 'list'): ?>
     <h2>Member Management</h2>
     
-    <!-- CHANGE: Add the filter form -->
     <div class="row mb-3">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <form method="GET" class="form-inline">
                 <input type="hidden" name="action" value="list">
+
                 <label for="status_filter" class="mr-2">Show:</label>
                 <select name="status_filter" id="status_filter" class="form-control mr-2" onchange="this.form.submit()">
+                    <option value="All" <?php echo ($status_filter == 'All') ? 'selected' : ''; ?>>All Members</option>
                     <option value="Active" <?php echo ($status_filter == 'Active') ? 'selected' : ''; ?>>Active Members</option>
                     <option value="Inactive" <?php echo ($status_filter == 'Inactive') ? 'selected' : ''; ?>>Inactive Members</option>
                     <option value="Pending" <?php echo ($status_filter == 'Pending') ? 'selected' : ''; ?>>Pending Members</option>
-                    <option value="All" <?php echo ($status_filter == 'All') ? 'selected' : ''; ?>>All Members</option>
                 </select>
+
+                <label for="search" class="mr-2">Search:</label>
+                <input 
+                    type="text"
+                    name="search"
+                    id="search"
+                    class="form-control mr-2"
+                    placeholder="Name..."
+                    value="<?php echo htmlspecialchars($search ?? ''); ?>">
+                
+                <button type="submit" class="btn btn-primary">Filter</button>
             </form>
         </div>
-        <div class="col-md-6 text-right">
+        <div class="col-md-4 text-right">
             <a href="members.php?action=add" class="btn btn-primary">Add New Member</a>
         </div>
     </div>
@@ -139,7 +203,11 @@ if ($action === 'list') {
             <tr>
                 <td><?php echo htmlspecialchars($m['FirstName'] . ' ' . $m['LastName']); ?></td>
                 <td><?php echo htmlspecialchars($m['Email']); ?></td>
-                <td><span class="badge badge-<?php echo $m['MembershipStatus'] == 'Active' ? 'success' : 'secondary'; ?>"><?php echo htmlspecialchars($m['MembershipStatus']); ?></span></td>
+                <td>
+                    <span class="badge badge-<?php echo $m['MembershipStatus'] == 'Active' ? 'success' : 'secondary'; ?>">
+                        <?php echo htmlspecialchars($m['MembershipStatus']); ?>
+                    </span>
+                </td>
                 <td>
                     <a href="members.php?action=edit&id=<?php echo $m['MemberID']; ?>" class="btn btn-sm btn-info">Edit</a>
                 </td>
