@@ -29,4 +29,36 @@ function flash_message() {
     }
     return '';
 }
+
+function get_members($pdo, $status_filter = 'All', $search = '') {
+    $sql = "
+        SELECT MemberID, FirstName, LastName, Email, MembershipStatus
+        FROM Member
+        WHERE 1=1
+    ";
+
+    $params = [];
+
+    // Filter by status
+    if ($status_filter !== 'All') {
+        $sql .= " AND MembershipStatus = ?";
+        $params[] = $status_filter;
+    }
+
+    // Search filter
+    if ($search !== '') {
+        $sql .= " AND (FirstName LIKE ? OR LastName LIKE ? OR CONCAT(FirstName, ' ', LastName) LIKE ?)";
+        $like = '%' . $search . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $sql .= " ORDER BY LastName, FirstName";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
 ?>
