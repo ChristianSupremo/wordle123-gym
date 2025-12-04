@@ -31,7 +31,7 @@ Before you begin, ensure you have the following software installed on your syste
 1. **Clone the Repository**:
    Open your terminal or command prompt and run:
    ```bash
-   git clone https://github.com/yourusername/gym-management-system.git
+   git clone https://github.com/ChristianSupremo/wordle123-gym.git
    ```
 
 2. **Navigate to the Project Directory**:
@@ -67,7 +67,7 @@ Before you begin, ensure you have the following software installed on your syste
 5. **Link Your Local Repository to GitHub**:
    - Run the following command to add the remote repository:
      ```bash
-     git remote add origin https://github.com/yourusername/gym-management-system.git
+     git remote add origin https://github.com/yourusername/wordle123-gym.git
      ```
 
 6. **Pull Changes from Remote Repository**:
