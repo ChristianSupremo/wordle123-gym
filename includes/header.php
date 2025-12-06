@@ -10,38 +10,106 @@ if (session_status() == PHP_SESSION_NONE) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Management System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>New You Fitness - Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="assets/css/style/style.css">
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <a class="navbar-brand" href="dashboard.php">New You Fitness</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <?php if (isset($_SESSION['staff_id'])): ?>
-            <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="dashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="members.php">Members</a></li>
-                <li class="nav-item"><a class="nav-link" href="memberships.php">Memberships</a></li>
-                <li class="nav-item"><a class="nav-link" href="plans.php">Plans</a></li>
-                <li class="nav-item"><a class="nav-link" href="payments.php">Payments</a></li>
-                <li class="nav-item"><a class="nav-link" href="staff.php">Staff</a></li>
-            </ul>
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Welcome, <?php echo htmlspecialchars($_SESSION['staff_name']); ?></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="logout.php">Logout</a>
-                </li>
-            </ul>
-            <?php endif; ?>
-        </div>
-    </nav>
+<body class="dashboard-page">
+    <?php if (isset($_SESSION['staff_id'])): ?>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/css/style/logo.png" class="logo-icon">
+                <button class="toggle-btn" onclick="toggleSidebar()">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
 
-    <div class="container mt-4">
-        <?php echo flash_message(); ?>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <?php 
+                    $initials = '';
+                    $name_parts = explode(' ', $_SESSION['staff_name']);
+                    foreach ($name_parts as $part) {
+                        $initials .= strtoupper(substr($part, 0, 1));
+                    }
+                    echo substr($initials, 0, 2);
+                    ?>
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Admin - <?php echo htmlspecialchars(explode(' ', $_SESSION['staff_name'])[0]); ?></div>
+                    <div class="user-role">Administrator</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="dashboard.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-house-door"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="members.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'members.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-people"></i>
+                        <span>Members</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="memberships.php" 
+                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'memberships.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-card-checklist"></i>
+                        <span>Memberships</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.php"
+                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Payments</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="plans.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-tag"></i>
+                        <span>Manage Plans</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="staff.php" 
+                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Staff</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-gear"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="dark-mode-toggle">
+                <i class="bi bi-moon"></i>
+                <span>Dark Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <a href="logout.php" class="logout-btn">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Log Out</span>
+            </a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <?php echo flash_message(); ?>
+    <?php else: ?>
+        <div class="container mt-4">
+            <?php echo flash_message(); ?>
+    <?php endif; ?>

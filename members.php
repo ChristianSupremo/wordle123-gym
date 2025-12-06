@@ -6,10 +6,10 @@ check_login();
 $action = $_GET['action'] ?? 'list';
 $member_id = $_GET['id'] ?? null;
 
-// Process POST (save member)
+// Process POST save
 include 'controllers/member_save.php';
 
-// Load data for edit / add
+// Load data for add/edit
 include 'controllers/member_fetch.php';
 
 // Fetch list of members
@@ -21,81 +21,163 @@ if ($action === 'list') {
 
 include 'includes/header.php';
 ?>
-
 <?php if ($action === 'list'): ?>
 
-<h2>Member Management</h2>
+<div class="page-header">
+<h1 class="page-title">Members</h1>
+</div>
 
-<div class="row mb-3">
-    <div class="col-md-8">
-        <form method="GET" class="form-inline">
-            <input type="hidden" name="action" value="list">
-
-            <label for="status_filter" class="mr-2">Show:</label>
-            <select name="status_filter" id="status_filter"
-                    class="form-control mr-2" onchange="this.form.submit()">
-                <option value="All"      <?= $status_filter=='All'?'selected':'' ?>>All</option>
-                <option value="Active"   <?= $status_filter=='Active'?'selected':'' ?>>Active</option>
-                <option value="Inactive" <?= $status_filter=='Inactive'?'selected':'' ?>>Inactive</option>
-                <option value="Pending"  <?= $status_filter=='Pending'?'selected':'' ?>>Pending</option>
-            </select>
-
-            <label for="search" class="mr-2">Search:</label>
-            <input type="text" class="form-control mr-2"
-                   name="search" placeholder="Name..."
-                   value="<?= htmlspecialchars($search) ?>">
-
-            <button class="btn btn-primary">Filter</button>
-        </form>
+<!-- Search, Filter, Add -->
+<div class="page-actions">
+<div class="search-filter-group">
+    <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
     </div>
 
-    <div class="col-md-4 text-right">
-        <a href="members.php?action=add" class="btn btn-primary">Add New Member</a>
+    <div class="filter-dropdown">
+        <button class="filter-btn" onclick="toggleFilter()">
+            <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
+        </button>
+
+        <div class="filter-dropdown-content" id="filterDropdown">
+            <form method="GET" action="members.php">
+                <input type="hidden" name="action" value="list">
+
+                <div class="filter-option">
+                    <input type="radio" name="status_filter" value="All" id="filterAll"
+                        <?= $status_filter == 'All' ? 'checked' : '' ?> onchange="this.form.submit()">
+                    <label for="filterAll">All Status</label>
+                </div>
+
+                <div class="filter-option">
+                    <input type="radio" name="status_filter" value="Active" id="filterActive"
+                        <?= $status_filter == 'Active' ? 'checked' : '' ?> onchange="this.form.submit()">
+                    <label for="filterActive">Active</label>
+                </div>
+
+                <div class="filter-option">
+                    <input type="radio" name="status_filter" value="Inactive" id="filterInactive"
+                        <?= $status_filter == 'Inactive' ? 'checked' : '' ?> onchange="this.form.submit()">
+                    <label for="filterInactive">Inactive</label>
+                </div>
+
+                <div class="filter-option">
+                    <input type="radio" name="status_filter" value="Pending" id="filterPending"
+                        <?= $status_filter == 'Pending' ? 'checked' : '' ?> onchange="this.form.submit()">
+                    <label for="filterPending">Pending</label>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<table class="table table-bordered table-hover">
-<thead class="thead-light">
-<tr>
-    <th>Name</th>
-    <th>Email</th>
-    <th>Status</th>
-    <th>Actions</th>
-</tr>
-</thead>
-<tbody>
-<?php foreach ($members as $m): ?>
-<tr>
-    <td><?= htmlspecialchars($m['FirstName'].' '.$m['LastName']) ?></td>
-    <td><?= htmlspecialchars($m['Email']) ?></td>
-    <td>
-        <span class="badge 
-            <?= $m['MembershipStatus']=='Active'?'bg-success':
-                ($m['MembershipStatus']=='Inactive'?'bg-warning':'bg-secondary') ?>">
-            <?= htmlspecialchars($m['MembershipStatus']) ?>
-        </span>
-    </td>
-    <td>
-        <button class="btn btn-sm btn-secondary view-member-btn"
-                data-id="<?= $m['MemberID'] ?>"
-                data-toggle="modal"
-                data-target="#memberViewModal">
-            <i class="bi bi-person-circle"></i>
-        </button>
+<a href="members.php?action=add" class="add-member-btn">
+    <i class="bi bi-plus-lg"></i> Add Member
+</a>
+</div>
 
-        <a href="members.php?action=edit&id=<?= $m['MemberID'] ?>"
-           class="btn btn-sm btn-info">Edit</a>
-    </td>
-</tr>
-<?php endforeach; ?>
-</tbody>
+<!-- Members Table -->
+<div class="members-table-container">
+<table class="members-table">
+    <thead>
+        <tr>
+            <th>Member ID</th>
+            <th>Full Name</th>
+            <th>Contact Number</th>
+            <th>Status</th>
+            <th>Join Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <?php if (count($members) > 0): ?>
+            <?php foreach ($members as $m): ?>
+                <tr>
+                    <td><?= htmlspecialchars($m['MemberID']) ?></td>
+
+                    <td><?= htmlspecialchars($m['FirstName'] . ' ' . $m['LastName']) ?></td>
+
+                    <td><?= htmlspecialchars($m['PhoneNo'] ?? 'N/A') ?></td>
+
+                    <td>
+                        <span class="status-badge <?= strtolower($m['MembershipStatus']) ?>">
+                            <?= htmlspecialchars($m['MembershipStatus']) ?>
+                        </span>
+                    </td>
+
+                    <td><?= isset($m['JoinDate']) ? date('m/d/y', strtotime($m['JoinDate'])) : 'N/A' ?></td>
+
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view-member-btn"
+                                    onclick="viewMember(<?= $m['MemberID'] ?>)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+
+                            <button class="action-btn edit-member-btn" onclick="editMember(<?= $m['MemberID'] ?>)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr>
+                <td colspan="6" style="text-align:center; padding:40px; color:#718096;">
+                    No members found
+                </td>
+            </tr>
+        <?php endif; ?>
+    </tbody>
 </table>
 
+        <!-- Pagination basic -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing 1 to <?= count($members) ?> of <?= count($members) ?> results
+            </div>
+            <div class="pagination">
+                <button class="pagination-btn" disabled><i class="bi bi-chevron-left"></i></button>
+                <button class="pagination-btn active">1</button>
+            </div>
+        </div>
+    </div>
+<script>
+// Toggle filter dropdown
+function toggleFilter() {
+    document.getElementById('filterDropdown').classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const filterBtn = document.querySelector('.filter-btn');
+    const dropdown = document.getElementById('filterDropdown');
+    if (!filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Search on Enter
+document.getElementById('searchInput').addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') {
+        window.location.href =
+            'members.php?action=list&search=' + encodeURIComponent(this.value);
+    }
+});
+
+// View modal placeholder
+function viewMember(id) {
+    console.log("View member:", id);
+}
+</script>
 <?php else: ?>
 
 <?php include 'includes/member_form.php'; ?>
 
 <?php endif; ?>
 
-<?php include 'includes/member_view_modal.php'; ?>
 <?php include 'includes/footer.php'; ?>
+<?php include 'includes/member_view_modal.php'; ?>
+<?php include 'includes/member_edit_modal.php'; ?>

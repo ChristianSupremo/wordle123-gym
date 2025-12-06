@@ -8,7 +8,7 @@ if (isset($_SESSION['staff_id'])) {
     exit();
 }
 
- $error_message = '';
+$error_message = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
@@ -31,31 +31,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Center - Login</title>
+    <link rel="stylesheet" href="assets/css/style/style.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <!-- Left Section - Gym Image -->
+        <div class="left-section"></div>
 
-<?php include 'includes/header.php'; ?>
+        <!-- Right Section - Login Form -->
+        <div class="right-section">
+            <div class="login-form">
+                <div class="logo">
+                    <img src="assets/css/style/logo.png" class="logo-icon">
+                </div>
+                
+                <h1>Log in to your account</h1>
+                <p class="subtitle">Welcome back! Please enter your details.</p>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Login</div>
-            <div class="card-body">
                 <?php if ($error_message): ?>
-                    <div class="alert alert-danger"><?php echo $error_message; ?></div>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
                 <?php endif; ?>
+
                 <form action="index.php" method="post">
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" name="username" class="form-control" required>
+                        <label for="username">Email</label>
+                        <input type="text" id="username" name="username" placeholder="Enter your email" required>
                     </div>
+
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" name="password" class="form-control" required>
+                        <input type="password" id="password" name="password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+
+                    <div class="forgot-password">
+                        <a href="forgot-password.php">Forgot password</a>
+                    </div>
+
+                    <button type="submit" class="sign-in-btn">Sign in</button>
                 </form>
             </div>
         </div>
     </div>
-</div>
-
-<?php include 'includes/footer.php'; ?>
+</body>
+</html>

@@ -4,96 +4,148 @@ require_once 'includes/functions.php';
 check_login();
 
 // Fetch dashboard stats
- $stmt = $pdo->query("SELECT COUNT(*) as total_members FROM Member WHERE MembershipStatus = 'Active'");
- $total_members = $stmt->fetch()['total_members'];
+$stmt = $pdo->query("SELECT COUNT(*) as total_members FROM Member");
+$total_members = $stmt->fetch()['total_members'];
 
- $stmt = $pdo->query("SELECT COUNT(*) as active_memberships FROM Membership WHERE Status = 'Active'");
- $active_memberships = $stmt->fetch()['active_memberships'];
+$stmt = $pdo->query("SELECT COUNT(*) as active_members FROM Member WHERE MembershipStatus = 'Active'");
+$active_members = $stmt->fetch()['active_members'];
 
- $stmt = $pdo->query("SELECT COUNT(*) as total_staff FROM Staff WHERE Status = 'Active'");
- $total_staff = $stmt->fetch()['total_staff'];
+$stmt = $pdo->query("SELECT COUNT(*) as expired_members FROM Member WHERE MembershipStatus = 'Expired'");
+$expired_members = $stmt->fetch()['expired_members'];
 
 // Monthly Revenue (Current Month)
- $stmt = $pdo->query("
+$stmt = $pdo->query("
     SELECT SUM(AmountPaid) AS monthly_revenue
     FROM Payment
     WHERE MONTH(PaymentDate) = MONTH(CURRENT_DATE())
       AND YEAR(PaymentDate) = YEAR(CURRENT_DATE())
       AND PaymentStatus = 'Completed'
 ");
-$monthly_revenue = $stmt->fetch()['monthly_revenue'] ?? 0;
+$total_revenue = $stmt->fetch()['monthly_revenue'] ?? 0;
 
-// Fetch recent payments
- $stmt = $pdo->query("
-    SELECT p.PaymentDate, p.AmountPaid, m.FirstName, m.LastName
-    FROM Payment p
-    JOIN Membership mem ON p.MembershipID = mem.MembershipID
-    JOIN Member m ON mem.MemberID = m.MemberID
-    ORDER BY p.PaymentDate DESC
-    LIMIT 5
+// New members this month
+$stmt = $pdo->query("
+    SELECT m.FirstName, m.LastName, mem.StartDate, p.PlanName
+    FROM Member m
+    JOIN Membership mem ON m.MemberID = mem.MemberID
+    JOIN Plan p ON mem.PlanID = p.PlanID
+    WHERE MONTH(mem.StartDate) = MONTH(CURRENT_DATE())
+      AND YEAR(mem.StartDate) = YEAR(CURRENT_DATE())
+    ORDER BY mem.StartDate DESC
+    LIMIT 4
 ");
- $recent_payments = $stmt->fetchAll();
+$new_members = $stmt->fetchAll();
+
+// Upcoming expirations
+$stmt = $pdo->query("
+    SELECT m.FirstName, m.LastName, mem.EndDate, p.PlanName,
+           DATEDIFF(mem.EndDate, CURRENT_DATE()) as days_left
+    FROM Member m
+    JOIN Membership mem ON m.MemberID = mem.MemberID
+    JOIN Plan p ON mem.PlanID = p.PlanID
+    WHERE mem.Status = 'Active'
+      AND DATEDIFF(mem.EndDate, CURRENT_DATE()) <= 7
+      AND DATEDIFF(mem.EndDate, CURRENT_DATE()) >= 0
+    ORDER BY mem.EndDate ASC
+    LIMIT 4
+");
+$upcoming_expirations = $stmt->fetchAll();
 
 ?>
 
 <?php include 'includes/header.php'; ?>
 
-<div class="row">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Active Members</h5>
-                <p class="card-text display-4"><?php echo $total_members; ?></p>
-            </div>
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Members</div>
+        <div class="stat-value">
+            <?php echo $total_members; ?>
+            <span class="stat-change">
+                <i class="bi bi-arrow-up"></i> 2.5%
+            </span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-success mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Active Memberships</h5>
-                <p class="card-text display-4"><?php echo $active_memberships; ?></p>
-            </div>
-        </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Active Members</div>
+        <div class="stat-value"><?php echo $active_members; ?></div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-info mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Active Staff</h5>
-                <p class="card-text display-4"><?php echo $total_staff; ?></p>
-            </div>
-        </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Expired Members</div>
+        <div class="stat-value"><?php echo $expired_members; ?></div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Total Revenue (This Month)</h5>
-                <p class="card-text display-4">₱<?php echo number_format($monthly_revenue, 2); ?></p>
-            </div>
-        </div>
+
+    <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">₱<?php echo number_format($total_revenue, 0); ?></div>
     </div>
 </div>
 
-<div class="card mt-4">
-    <div class="card-header">Recent Payments</div>
-    <div class="card-body">
-        <table class="table table-striped">
+<!-- Content Grid -->
+<div class="content-grid">
+    <!-- New Members This Month -->
+    <div class="dashboard-card">
+        <div class="card-header-flex">
+            <h2 class="card-title">New Members This Month</h2>
+            <a href="members.php" class="see-all-link">See all</a>
+        </div>
+        
+        <table class="dashboard-table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Member</th>
-                    <th>Amount</th>
+                    <th>Name</th>
+                    <th>Plan</th>
+                    <th>Joined Date</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($recent_payments as $payment): ?>
-                <tr>
-                    <td><?php echo date('M j, Y g:i A', strtotime($payment['PaymentDate'])); ?></td>
-                    <td><?php echo htmlspecialchars($payment['FirstName'] . ' ' . $payment['LastName']); ?></td>
-                    <td>₱<?php echo number_format($payment['AmountPaid'], 2); ?></td>
-                </tr>
-                <?php endforeach; ?>
+                <?php if (count($new_members) > 0): ?>
+                    <?php foreach ($new_members as $member): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($member['FirstName'] . ' ' . $member['LastName']); ?></td>
+                        <td><span class="plan-badge"><?php echo htmlspecialchars($member['PlanName']); ?></span></td>
+                        <td><?php echo date('m/d/Y', strtotime($member['StartDate'])); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #718096;">No new members this month</td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- Upcoming Expirations -->
+    <div class="dashboard-card">
+        <div class="card-header-flex">
+            <h2 class="card-title">Upcoming Expirations</h2>
+            <a href="memberships.php" class="see-all-link">See all</a>
+        </div>
+        
+        <div class="expiration-list">
+            <?php if (count($upcoming_expirations) > 0): ?>
+                <?php foreach ($upcoming_expirations as $expiring): ?>
+                <div class="expiration-item">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($expiring['FirstName'] . ' ' . $expiring['LastName']); ?>&background=4fd1c5&color=fff" 
+                         alt="Avatar" class="member-avatar">
+                    <div class="member-info">
+                        <div class="member-name"><?php echo htmlspecialchars($expiring['FirstName'] . ' ' . $expiring['LastName']); ?></div>
+                        <div class="member-plan">Plan: <?php echo htmlspecialchars($expiring['PlanName']); ?></div>
+                    </div>
+                    <span class="days-badge"><?php echo $expiring['days_left']; ?> Days</span>
+                </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="text-align: center; color: #718096; padding: 20px 0;">No upcoming expirations</p>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 

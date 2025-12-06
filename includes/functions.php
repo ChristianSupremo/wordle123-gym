@@ -32,8 +32,14 @@ function flash_message() {
 
 function get_members($pdo, $status_filter = 'All', $search = '') {
     $sql = "
-        SELECT MemberID, FirstName, LastName, Email, MembershipStatus
-        FROM Member
+        SELECT 
+            MemberID,
+            FirstName,
+            LastName,
+            PhoneNo,
+            JoinDate,
+            MembershipStatus
+        FROM member
         WHERE 1=1
     ";
 
@@ -47,18 +53,26 @@ function get_members($pdo, $status_filter = 'All', $search = '') {
 
     // Search filter
     if ($search !== '') {
-        $sql .= " AND (FirstName LIKE ? OR LastName LIKE ? OR CONCAT(FirstName, ' ', LastName) LIKE ?)";
+        $sql .= " 
+            AND (
+                FirstName LIKE ? 
+                OR LastName LIKE ? 
+                OR CONCAT(FirstName, ' ', LastName) LIKE ?
+                OR PhoneNo LIKE ?
+            )
+        ";
         $like = '%' . $search . '%';
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
+        $params[] = $like; // allows searching by phone number
     }
 
     $sql .= " ORDER BY LastName, FirstName";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 ?>

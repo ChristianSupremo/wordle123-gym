@@ -9,7 +9,7 @@ if (!$id) {
 }
 
 // 1. Fetch member info
-$stmt = $pdo->prepare("SELECT * FROM Member WHERE MemberID = ?");
+$stmt = $pdo->prepare("SELECT * FROM member WHERE MemberID = ?");
 $stmt->execute([$id]);
 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
