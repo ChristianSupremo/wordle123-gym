@@ -1090,29 +1090,45 @@ input:checked + .slider:hover {
     border-bottom: none;
 }
 
-/* Status Badge */
 .status-badge {
     display: inline-block;
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
+    border: 1px solid transparent;
 }
 
 .status-badge.active {
-    background-color: #c6f6d5;
-    color: #22543d;
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.status-badge.expired {
+    background-color: #e2e8f0;
+    color: #4a5568;
+    border-color: #cbd5e0;
+}
+
+.status-badge.cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
 }
 
 .status-badge.inactive {
-    background-color: #fed7d7;
-    color: #742a2a;
+    background-color: #fef2f2;
+    color: #7f1d1d;
+    border-color: #fee2e2;
 }
 
 .status-badge.pending {
-    background-color: #feebc8;
-    color: #7c2d12;
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
 }
+
 
 /* Action Buttons */
 .action-buttons {
@@ -1568,38 +1584,6 @@ body.modal-open {
     font-weight: 700;
     color: #2d3748;
     margin: 0 0 12px 0;
-}
-
-.status-badge-modal {
-    display: inline-block;
-    padding: 6px 16px;
-    border-radius: 16px;
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: capitalize;
-}
-
-.status-badge-modal.active {
-    background-color: #c6f6d5;
-    color: #22543d;
-}
-
-.status-badge-modal.inactive {
-    background-color: #fed7d7;
-    color: #742a2a;
-}
-
-.status-badge-modal.pending {
-    background-color: #feebc8;
-    color: #7c2d12;
-}
-
-.status-badge-modal.expired {
-    background-color: #718096; /* gray */
-}
-
-.status-badge-modal.cancelled {
-    background-color: #e53e3e; /* red */
 }
 
 /* Tabs */
@@ -2449,4 +2433,39 @@ select.form-control-modern {
     font-size: 12px;
     color: #64748b;
     font-style: italic;
+}
+
+/* ========================================
+   PAYMENT METHOD BADGE STYLES
+   ======================================== */
+
+.payment-method-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+}
+
+.payment-method-badge i {
+    font-size: 14px;
+}
+
+.status-badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.completed {
+    background-color: #d1fae5;
+    color: #065f46;
 }

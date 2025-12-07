@@ -1,138 +1,318 @@
 <?php
 require_once 'config/db.php';
 require_once 'includes/functions.php';
+require_once 'includes/payment_modal_helpers.php';
 check_login();
 
- $action = $_GET['action'] ?? 'list';
- $payment_id = $_GET['id'] ?? null;
+$action = $_GET['action'] ?? 'list';
+$payment_id = $_GET['id'] ?? null;
 
 // --- Handle Form Submissions ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $payment_id = $_POST['payment_id'] ?? null;
     $membership_id = $_POST['MembershipID'];
-    $payment_method_id = $_POST['PaymentMethodID'];
+    $payment_method_id = $_POST['PaymentMethod'];
     $amount_paid = $_POST['AmountPaid'];
-    $reference_number = $_POST['ReferenceNumber'];
-    $remarks = $_POST['Remarks'];
+    $reference_number = $_POST['ReferenceNumber'] ?? null;
+    $remarks = $_POST['Remarks'] ?? null;
+    $payment_status = $_POST['PaymentStatus'] ?? 'Completed';
     $staff_id = $_SESSION['staff_id'];
 
-    $sql = "INSERT INTO Payment (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks) VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt= $pdo->prepare($sql);
-    $stmt->execute([$membership_id, $payment_method_id, $staff_id, $amount_paid, $reference_number, $remarks]);
+    if ($payment_id) {
+        // UPDATE
+        $sql = "UPDATE Payment 
+                SET PaymentMethodID=?, AmountPaid=?, ReferenceNumber=?, Remarks=?, PaymentStatus=? 
+                WHERE PaymentID=?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$payment_method_id, $amount_paid, $reference_number, $remarks, $payment_status, $payment_id]);
 
-    $_SESSION['message'] = "Payment recorded successfully!";
+        $_SESSION['message'] = "Payment updated successfully!";
+    } else {
+        // INSERT
+        $sql = "INSERT INTO Payment (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks, PaymentStatus, PaymentDate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$membership_id, $payment_method_id, $staff_id, $amount_paid, $reference_number, $remarks, $payment_status]);
+
+        $_SESSION['message'] = "Payment recorded successfully!";
+    }
+
     $_SESSION['message_type'] = "success";
     header('Location: payments.php');
     exit();
 }
 
-// --- Handle Page Rendering ---
-if ($action === 'add') {
-    // Fetch active memberships for the dropdown
-    $stmt = $pdo->query("
-        SELECT m.MembershipID,
-            CONCAT(
-                mem.FirstName, ' ', mem.LastName,
-                ' - ', p.PlanName, ' (', p.Duration, ')',
-                ' - ₱', FORMAT(p.Rate, 2)
-            ) AS Details
+// Fetch data for list view
+if ($action === 'list') {
+    $status_filter = $_GET['status_filter'] ?? 'All';
+    $search = trim($_GET['search'] ?? '');
+
+    $sql = "
+        SELECT 
+            p.PaymentID,
+            p.MembershipID AS PaymentMembershipID,
+            m.MembershipID,
+            p.PaymentDate,
+            p.AmountPaid,
+            pm.PaymentMethodID,
+            pm.MethodName AS PaymentMethod,
+            p.ReferenceNumber,
+            p.PaymentStatus,
+            p.Remarks,
+            CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
+            mem.FirstName,
+            mem.LastName,
+            pl.PlanName,
+            pl.Rate,
+            m.StartDate,
+            m.EndDate,
+            m.Status AS MembershipStatus,
+            s.FullName AS StaffName
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
-        JOIN Plan p ON m.PlanID = p.PlanID
-        WHERE m.Status = 'Active'
-        ORDER BY mem.LastName
-    ");
-    $active_memberships = $stmt->fetchAll();
+        JOIN Plan pl ON m.PlanID = pl.PlanID
+        LEFT JOIN Payment p ON m.MembershipID = p.MembershipID
+        LEFT JOIN PaymentMethods pm ON p.PaymentMethodID = pm.PaymentMethodID
+        LEFT JOIN Staff s ON p.StaffID = s.StaffID
+        WHERE 1=1
+    ";
 
-    // Fetch payment methods for the dropdown
-    $payment_methods = $pdo->query("SELECT PaymentMethodID, MethodName FROM PaymentMethods WHERE IsActive = 1")->fetchAll();
-}
+    $params = [];
 
-// If action is list, show the list of payments
-if ($action === 'list') {
-    $stmt = $pdo->query("
-        SELECT p.PaymentID, p.PaymentDate, p.AmountPaid, p.ReferenceNumber, p.PaymentStatus,
-               CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
-               pm.MethodName
-        FROM Payment p
-        JOIN Membership m ON p.MembershipID = m.MembershipID
-        JOIN Member mem ON m.MemberID = mem.MemberID
-        JOIN PaymentMethods pm ON p.PaymentMethodID = pm.PaymentMethodID
-        ORDER BY p.PaymentDate DESC
-    ");
+    if ($status_filter !== 'All') {
+        if ($status_filter === 'No Payment') {
+            $sql .= " AND p.PaymentID IS NULL";
+        } else {
+            $sql .= " AND p.PaymentStatus = ?";
+            $params[] = $status_filter;
+        }
+    }
+
+    if ($search !== '') {
+        $sql .= " AND (mem.FirstName LIKE ?
+                       OR mem.LastName LIKE ?
+                       OR CONCAT(mem.FirstName, ' ', mem.LastName) LIKE ?
+                       OR p.ReferenceNumber LIKE ?)";
+        $like = '%' . $search . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $sql .= " ORDER BY 
+              CASE WHEN p.PaymentDate IS NULL THEN 1 ELSE 0 END,
+              p.PaymentDate DESC,
+              m.StartDate DESC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $payments = $stmt->fetchAll();
 }
+
+// Fetch active memberships and payment methods for modals
+$active_memberships = getActiveMemberships($pdo);
+$payment_methods = getPaymentMethods($pdo);
 
 ?>
 
 <?php include 'includes/header.php'; ?>
 
+<!-- Include shared CSS -->
+<link rel="stylesheet" href="assets/css/style/payment_modals.css">
+
 <?php if ($action === 'list'): ?>
-    <h2>Payment History</h2>
-    <a href="payments.php?action=add" class="btn btn-primary mb-3">Record New Payment</a>
-    <table class="table table-bordered table-hover">
-        <thead class="thead-light">
+
+<div class="page-header">
+    <h1 class="page-title">Payment History</h1>
+</div>
+
+<!-- Search, Filter, Add -->
+<div class="page-actions">
+    <div class="search-filter-group">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search member or reference..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
+        </div>
+
+        <div class="filter-dropdown">
+            <button class="filter-btn" onclick="toggleFilter()">
+                <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
+            </button>
+
+            <div class="filter-dropdown-content" id="filterDropdown">
+                <form method="GET" action="payments.php">
+                    <input type="hidden" name="action" value="list">
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="All" id="filterAll"
+                            <?= $status_filter == 'All' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterAll">All Records</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="No Payment" id="filterNoPayment"
+                            <?= $status_filter == 'No Payment' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterNoPayment">No Payment</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Completed" id="filterCompleted"
+                            <?= $status_filter == 'Completed' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterCompleted">Completed</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Pending" id="filterPending"
+                            <?= $status_filter == 'Pending' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterPending">Pending</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Failed" id="filterFailed"
+                            <?= $status_filter == 'Failed' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterFailed">Failed</label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddPaymentModal();">
+        <i class="bi bi-plus-lg"></i> Record Payment
+    </a>
+</div>
+
+<!-- Payments Table -->
+<div class="members-table-container">
+    <table class="members-table">
+        <thead>
             <tr>
-                <th>Date</th>
-                <th>Member</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Reference</th>
+                <th>Payment Date</th>
+                <th>Member Name</th>
+                <th>Plan</th>
+                <th>Payment Method</th>
+                <th>Amount Paid</th>
+                <th>Reference #</th>
                 <th>Status</th>
+                <th>Staff</th>
+                <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
-            <?php foreach ($payments as $p): ?>
-            <tr>
-                <td><?php echo date('M j, Y g:i A', strtotime($p['PaymentDate'])); ?></td>
-                <td><?php echo htmlspecialchars($p['MemberName']); ?></td>
-                <td><?php echo htmlspecialchars($p['MethodName']); ?></td>
-                <td>₱<?php echo number_format($p['AmountPaid'], 2); ?></td>
-                <td><?php echo htmlspecialchars($p['ReferenceNumber']); ?></td>
-                <td><span class="badge badge-<?php echo $p['PaymentStatus'] == 'Completed' ? 'success' : 'warning'; ?>"><?php echo htmlspecialchars($p['PaymentStatus']); ?></span></td>
-            </tr>
-            <?php endforeach; ?>
+            <?php if (count($payments) > 0): ?>
+                <?php foreach ($payments as $p): ?>
+                    <tr>
+                        <td>
+                            <?php if ($p['PaymentDate']): ?>
+                                <?= formatPaymentDate($p['PaymentDate'], 'short') ?>
+                            <?php else: ?>
+                                <span style="color: #94a3b8;">No payment yet</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= htmlspecialchars($p['MemberName']) ?></td>
+                        <td><?= htmlspecialchars($p['PlanName']) ?></td>
+                        <td>
+                            <?php if ($p['PaymentMethod']): ?>
+                                <span class="payment-method-badge">
+                                    <i class="bi bi-<?= getPaymentMethodIcon($p['PaymentMethod']) ?>"></i>
+                                    <?= htmlspecialchars($p['PaymentMethod']) ?>
+                                </span>
+                            <?php else: ?>
+                                <span style="color: #94a3b8;">-</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($p['AmountPaid']): ?>
+                                <strong>₱<?= number_format($p['AmountPaid'], 2) ?></strong>
+                            <?php else: ?>
+                                <span style="color: #94a3b8;">₱<?= number_format($p['Rate'], 2) ?></span>
+                                <small style="display: block; color: #94a3b8; font-size: 11px;">Expected</small>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= htmlspecialchars($p['ReferenceNumber'] ?? 'N/A') ?></td>
+                        <td>
+                            <?php if ($p['PaymentStatus']): ?>
+                                <span class="status-badge <?= getStatusBadgeClass($p['PaymentStatus']) ?>">
+                                    <?= htmlspecialchars($p['PaymentStatus']) ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="status-badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;">
+                                    No Payment
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= htmlspecialchars($p['StaffName'] ?? 'N/A') ?></td>
+                        <td>
+                            <div class="action-buttons">
+                                <?php if ($p['PaymentID']): ?>
+                                    <button class="action-btn" onclick="viewPaymentDetails(<?= $p['PaymentID'] ?>)" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="action-btn" onclick="editPayment(<?= $p['PaymentID'] ?>)" title="Edit Payment">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                <?php else: ?>
+                                    <button class="action-btn" onclick="openAddPaymentModalForMembership(<?= $p['MembershipID'] ?>)" title="Record Payment">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:40px; color:#718096;">
+                        No records found
+                    </td>
+                </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 
-<?php elseif ($action === 'add'): ?>
-    <h2>Record New Payment</h2>
-    <form action="payments.php" method="post">
-        <div class="form-group">
-            <label for="MembershipID">Membership</label>
-            <select name="MembershipID" class="form-control" required>
-                <option value="">Select Active Membership...</option>
-                <?php foreach ($active_memberships as $membership): ?>
-                    <option value="<?php echo $membership['MembershipID']; ?>">
-                        <?php echo htmlspecialchars($membership['Details']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing 1 to <?= count($payments) ?> of <?= count($payments) ?> results
         </div>
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label for="PaymentMethodID">Payment Method</label>
-                <select name="PaymentMethodID" class="form-control" required>
-                    <?php foreach ($payment_methods as $method): ?>
-                        <option value="<?php echo $method['PaymentMethodID']; ?>"><?php echo htmlspecialchars($method['MethodName']); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="AmountPaid">Amount Paid</label>
-                <input type="number" step="0.01" class="form-control" name="AmountPaid" placeholder="0.00" required>
-            </div>
+        <div class="pagination">
+            <button class="pagination-btn" disabled><i class="bi bi-chevron-left"></i></button>
+            <button class="pagination-btn active">1</button>
         </div>
-        <div class="form-group">
-            <label for="ReferenceNumber">Reference Number (e.g., Cheque #, Transaction ID)</label>
-            <input type="text" class="form-control" name="ReferenceNumber">
-        </div>
-        <div class="form-group">
-            <label for="Remarks">Remarks</label>
-            <textarea class="form-control" name="Remarks" rows="3"></textarea>
-        </div>
-        <button type="submit" class="btn btn-success">Record Payment</button>
-        <a href="payments.php" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
+</div>
+
+<!-- Include shared JavaScript -->
+<script src="assets/js/memberships.js"></script>
+
+<script>
+// Toggle filter dropdown
+function toggleFilter() {
+    document.getElementById('filterDropdown').classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const filterBtn = document.querySelector('.filter-btn');
+    const dropdown = document.getElementById('filterDropdown');
+    if (!filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Search on Enter
+document.getElementById('searchInput').addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') {
+        window.location.href = 'payments.php?action=list&search=' + encodeURIComponent(this.value);
+    }
+});
+</script>
+
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
+<?php include 'includes/payment_add_modal.php'; ?>
+<?php include 'includes/payment_edit_modal.php'; ?>
+<?php include 'includes/payment_view_modal.php'; ?>

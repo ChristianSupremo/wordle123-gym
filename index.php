@@ -38,6 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fitness Center - Login</title>
     <link rel="stylesheet" href="assets/css/style/style.css">
+    <link rel="stylesheet" href="assets/css/style/payment_modals.css">
 </head>
 <body class="login-page">
     <div class="login-container">
