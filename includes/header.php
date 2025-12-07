@@ -83,7 +83,7 @@ if (session_status() == PHP_SESSION_NONE) {
                         <span>Staff</span>
                     </a>
                 </li>
-                <li class="nav-item">scrollbar
+                <li class="nav-item">
                     <a href="settings.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
                         <i class="bi bi-gear"></i>
                         <span>Settings</span>

@@ -33,7 +33,7 @@ include 'includes/header.php';
 <div class="search-filter-group">
     <div class="search-box">
         <i class="bi bi-search"></i>
-        <input type="text" placeholder="Search by..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
+        <input type="text" placeholder="Search member..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
     </div>
 
     <div class="filter-dropdown">

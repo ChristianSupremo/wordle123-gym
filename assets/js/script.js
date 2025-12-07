@@ -166,3 +166,103 @@ const confirm = new ConfirmDialog();
 // if (confirmed) {
 //     // Do delete action
 // }
+
+//EDIT MEMBERSHIP MODAL JS
+// Initialize searchable select for member field
+window.initEditMemberSearch =function initEditMemberSearch() {
+    const searchInput = document.getElementById('edit_member_search');
+    const hiddenInput = document.getElementById('edit_member_id');
+    const dropdown = document.getElementById('edit_member_dropdown');
+    const options = dropdown.querySelectorAll('.searchable-select-option');
+
+    // Show dropdown on focus
+    searchInput.addEventListener('focus', function() {
+        dropdown.classList.add('show');
+        filterOptions('');
+    });
+
+    // Filter options on input
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filterOptions(searchTerm);
+    });
+
+    // Handle option selection
+    options.forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.getAttribute('data-text');
+            
+            hiddenInput.value = value;
+            searchInput.value = text;
+            dropdown.classList.remove('show');
+            
+            // Update selected state
+            options.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Filter options function
+    function filterOptions(searchTerm) {
+        let hasVisibleOptions = false;
+        
+        options.forEach(option => {
+            const text = option.getAttribute('data-text').toLowerCase();
+            const matches = text.includes(searchTerm);
+            
+            if (matches) {
+                option.classList.remove('hidden');
+                hasVisibleOptions = true;
+            } else {
+                option.classList.add('hidden');
+            }
+        });
+
+        // Show/hide dropdown based on visible options
+        if (hasVisibleOptions) {
+            dropdown.classList.add('show');
+        }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const visibleOptions = Array.from(options).filter(opt => !opt.classList.contains('hidden'));
+        const currentIndex = visibleOptions.findIndex(opt => opt.classList.contains('selected'));
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = currentIndex < visibleOptions.length - 1 ? currentIndex + 1 : 0;
+            if (visibleOptions[nextIndex]) {
+                options.forEach(opt => opt.classList.remove('selected'));
+                visibleOptions[nextIndex].classList.add('selected');
+                visibleOptions[nextIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = currentIndex > 0 ? currentIndex - 1 : visibleOptions.length - 1;
+            if (visibleOptions[prevIndex]) {
+                options.forEach(opt => opt.classList.remove('selected'));
+                visibleOptions[prevIndex].classList.add('selected');
+                visibleOptions[prevIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const selectedOption = visibleOptions.find(opt => opt.classList.contains('selected'));
+            if (selectedOption) {
+                selectedOption.click();
+            } else if (visibleOptions.length > 0) {
+                visibleOptions[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.classList.remove('show');
+        }
+    });
+}

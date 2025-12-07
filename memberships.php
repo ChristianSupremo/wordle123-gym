@@ -93,44 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     exit();
 }
 
-
-// --- Handle Page Rendering ---
-if ($action === 'edit' && $membership_id) {
-    $stmt = $pdo->prepare("SELECT * FROM Membership WHERE MembershipID = ?");
-    $stmt->execute([$membership_id]);
-    $membership = $stmt->fetch();
-    if (!$membership) {
-        $_SESSION['message'] = "Membership not found.";
-        $_SESSION['message_type'] = "error";
-        header('Location: memberships.php');
-        exit();
-    }
-
-} elseif ($action === 'renew' && $membership_id) {
-    $stmt = $pdo->prepare("SELECT * FROM Membership WHERE MembershipID = ?");
-    $stmt->execute([$membership_id]);
-    $membership = $stmt->fetch();
-    
-    $membership['MembershipID'] = null;
-    $membership['StartDate'] = date('Y-m-d');
-
-    if (!$membership) {
-        $_SESSION['message'] = "Membership not found.";
-        $_SESSION['message_type'] = "error";
-        header('Location: memberships.php');
-        exit();
-    }
-
-} elseif ($action === 'add') {
-    $membership = [
-        'MembershipID' => null,
-        'MemberID' => '',
-        'PlanID' => '',
-        'StartDate' => date('Y-m-d'),
-        'Status' => 'Active'
-    ];
-}
-
 $members = $pdo->query("SELECT MemberID, FirstName, LastName FROM Member ORDER BY LastName, FirstName")->fetchAll();
 $plans = $pdo->query("SELECT PlanID, PlanName, Rate FROM Plan WHERE IsActive = 1")->fetchAll();
 
@@ -141,6 +103,7 @@ if ($action === 'list') {
 
     $sql = "
         SELECT m.MembershipID,
+               m.MemberID,
                CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
                mem.FirstName,
                mem.LastName,
@@ -148,7 +111,8 @@ if ($action === 'list') {
                m.StartDate,
                m.EndDate,
                m.Status,
-               m.PlanID
+               m.PlanID,
+               DATEDIFF(m.EndDate, CURDATE()) AS DaysLeft
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
         JOIN Plan p ON m.PlanID = p.PlanID
@@ -194,133 +158,239 @@ if ($action === 'list') {
 <?php include 'includes/header.php'; ?>
 
 <?php if ($action === 'list'): ?>
-    <h2>Membership Management</h2>
 
-    <div class="row mb-3">
-        <div class="col-md-8">
-            <form method="GET" class="form-inline">
-                <input type="hidden" name="action" value="list">
+<div class="page-header">
+    <h1 class="page-title">Memberships</h1>
+</div>
 
-                <label for="status_filter" class="mr-2">Show:</label>
-                <select name="status_filter" id="status_filter" class="form-control mr-2" onchange="this.form.submit()">
-                    <option value="All" <?php echo ($status_filter == 'All') ? 'selected' : ''; ?>>All Memberships</option>
-                    <option value="Active" <?php echo ($status_filter == 'Active') ? 'selected' : ''; ?>>Active Memberships</option>
-                    <option value="Expired" <?php echo ($status_filter == 'Expired') ? 'selected' : ''; ?>>Expired Memberships</option>
-                    <option value="Cancelled" <?php echo ($status_filter == 'Cancelled') ? 'selected' : ''; ?>>Cancelled Memberships</option>
-                </select>
-
-                <label for="search" class="mr-2">Search:</label>
-                <input
-                    type="text"
-                    name="search"
-                    id="search"
-                    class="form-control mr-2"
-                    placeholder="Member name..."
-                    value="<?php echo htmlspecialchars($search ?? ''); ?>">
-
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </form>
+<!-- Search, Filter, Add -->
+<div class="page-actions">
+    <div class="search-filter-group">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search member..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
         </div>
-        <div class="col-md-4 text-right">
-            <a href="memberships.php?action=add" class="btn btn-primary">Create New Membership</a>
+
+        <div class="filter-dropdown">
+            <button class="filter-btn" onclick="toggleFilter()">
+                <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
+            </button>
+
+            <div class="filter-dropdown-content" id="filterDropdown">
+                <form method="GET" action="memberships.php">
+                    <input type="hidden" name="action" value="list">
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="All" id="filterAll"
+                            <?= $status_filter == 'All' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterAll">All Memberships</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Active" id="filterActive"
+                            <?= $status_filter == 'Active' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterActive">Active</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Expired" id="filterExpired"
+                            <?= $status_filter == 'Expired' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterExpired">Expired</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Cancelled" id="filterCancelled"
+                            <?= $status_filter == 'Cancelled' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterCancelled">Cancelled</label>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <table class="table table-bordered table-hover">
-        <thead class="thead-light">
+    <a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddMembershipModal();">
+        <i class="bi bi-plus-lg"></i> Create Membership
+    </a>
+</div>
+
+<!-- Memberships Table -->
+<div class="members-table-container">
+    <table class="members-table">
+        <thead>
             <tr>
                 <th>Member</th>
                 <th>Plan</th>
-                <th>Start</th>
-                <th>End</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Days Left</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
-            <?php foreach ($memberships as $m): ?>
-            <tr>
-                <td><?= htmlspecialchars($m['MemberName']); ?></td>
-                <td><?= htmlspecialchars($m['PlanName']); ?></td>
-                <td><?= date('M j, Y', strtotime($m['StartDate'])); ?></td>
-                <td><?= date('M j, Y', strtotime($m['EndDate'])); ?></td>
-                <td>
-                    <span class="badge 
-                        <?php 
-                            echo $m['Status'] === 'Active' ? 'badge-success' : 
-                                ($m['Status'] === 'Expired' ? 'badge-danger' : 'badge-secondary'); 
-                        ?>
-                    ">
-                        <?= htmlspecialchars($m['Status']); ?>
-                    </span>
-                </td>
-                <td>
-                    <a href="memberships.php?action=edit&id=<?= $m['MembershipID']; ?>" class="btn btn-sm btn-info">Edit</a>
-                    <a href="memberships.php?action=renew&id=<?= $m['MembershipID']; ?>" class="btn btn-sm btn-warning">Renew</a>
-                </td>
-            </tr>
-            <?php endforeach; ?>
+            <?php if (count($memberships) > 0): ?>
+                <?php foreach ($memberships as $m): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($m['MemberName']) ?></td>
+                        <td><?= htmlspecialchars($m['PlanName']) ?></td>
+                        <td><?= date('m/d/y', strtotime($m['StartDate'])) ?></td>
+                        <td><?= date('m/d/y', strtotime($m['EndDate'])) ?></td>
+                        <td>
+                            <?php
+                            $daysLeft = $m['DaysLeft'];
+                            if ($m['Status'] === 'Cancelled') {
+                                echo '<span style="color: #718096;">Cancelled</span>';
+                            } elseif ($m['Status'] === 'Expired') {
+                                $daysExpired = abs($daysLeft);
+                                echo '<span style="color: #e53e3e;">Expired (' . $daysExpired . ' day' . ($daysExpired != 1 ? 's' : '') . ')</span>';
+                            } elseif ($daysLeft < 0) {
+                                echo '<span style="color: #e53e3e;">Expired</span>';
+                            } elseif ($daysLeft == 0) {
+                                echo '<span style="color: #dd6b20;">Expires today</span>';
+                            } elseif ($daysLeft <= 7) {
+                                echo '<span style="color: #dd6b20;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
+                            } else {
+                                echo '<span style="color: #38a169;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <span class="status-badge <?= strtolower($m['Status']) ?>">
+                                <?= htmlspecialchars($m['Status']) ?>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view-btn" onclick="viewMembershipDetails(<?= $m['MembershipID'] ?>)" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="action-btn" onclick="editMembership(<?= $m['MembershipID'] ?>)">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="action-btn" onclick="renewMembership(<?= $m['MembershipID'] ?>)">
+                                    <i class="bi bi-arrow-repeat"></i> Renew
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:40px; color:#718096;">
+                        No memberships found
+                    </td>
+                </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing 1 to <?= count($memberships) ?> of <?= count($memberships) ?> results
+        </div>
+        <div class="pagination">
+            <button class="pagination-btn" disabled><i class="bi bi-chevron-left"></i></button>
+            <button class="pagination-btn active">1</button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+// Open add membership modal - now uses modal instead of redirect
+function openAddMembershipModal() {
+    openAddMembershipModal();
+}
+</script>
+
 <?php else: ?>
-    <h2>
-        <?= $action === 'edit' ? "Edit Membership" : ($action === 'renew' ? "Renew Membership" : "Create Membership"); ?>
-    </h2>
+    <!-- Form view remains the same for now -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <?= $action === 'edit' ? "Edit Membership" : ($action === 'renew' ? "Renew Membership" : "Create Membership") ?>
+        </h1>
+    </div>
 
-    <form action="memberships.php" method="post">
-        <input type="hidden" name="membership_id" value="<?= $membership['MembershipID'] ?? ''; ?>">
+    <div class="dashboard-card">
+        <form action="memberships.php" method="post">
+            <input type="hidden" name="membership_id" value="<?= $membership['MembershipID'] ?? '' ?>">
 
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label>Member</label>
-                <select name="MemberID" class="form-control" required>
-                    <option value="">Select Member...</option>
-                    <?php foreach ($members as $m): ?>
-                        <option value="<?= $m['MemberID']; ?>" <?= (isset($membership['MemberID']) && $membership['MemberID'] == $m['MemberID']) ? 'selected' : ''; ?>>
-                            <?= htmlspecialchars($m['FirstName'] . ' ' . $m['LastName']); ?>
+            <div class="form-grid">
+                <div class="form-group-modern">
+                    <label class="form-label-modern">
+                        <i class="bi bi-person"></i> Member
+                        <span class="required">*</span>
+                    </label>
+                    <select name="MemberID" class="form-control-modern" required>
+                        <option value="">Select Member...</option>
+                        <?php foreach ($members as $mem): ?>
+                            <option value="<?= $mem['MemberID'] ?>" 
+                                <?= (isset($membership['MemberID']) && $membership['MemberID'] == $mem['MemberID']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($mem['FirstName'] . ' ' . $mem['LastName']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group-modern">
+                    <label class="form-label-modern">
+                        <i class="bi bi-tag"></i> Plan
+                        <span class="required">*</span>
+                    </label>
+                    <select name="PlanID" class="form-control-modern" required>
+                        <option value="">Select Plan...</option>
+                        <?php foreach ($plans as $plan): ?>
+                            <option value="<?= $plan['PlanID'] ?>" 
+                                <?= (isset($membership['PlanID']) && $membership['PlanID'] == $plan['PlanID']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($plan['PlanName'] . ' - ₱' . number_format($plan['Rate'], 2)) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group-modern">
+                    <label class="form-label-modern">
+                        <i class="bi bi-calendar"></i> Start Date
+                        <span class="required">*</span>
+                    </label>
+                    <input type="date" name="StartDate" class="form-control-modern" 
+                           value="<?= $membership['StartDate'] ?? '' ?>" required>
+                </div>
+
+                <div class="form-group-modern">
+                    <label class="form-label-modern">
+                        <i class="bi bi-check-circle"></i> Status
+                    </label>
+                    <select name="Status" class="form-control-modern">
+                        <option value="Active">Active</option>
+                        <option value="Expired">Expired</option>
+                        <option value="Cancelled" 
+                            <?= isset($membership['Status']) && $membership['Status'] == 'Cancelled' ? 'selected' : '' ?>>
+                            Cancelled
                         </option>
-                    <?php endforeach; ?>
-                </select>
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group col-md-6">
-                <label>Plan</label>
-                <select name="PlanID" class="form-control" required>
-                    <option value="">Select Plan...</option>
-                    <?php foreach ($plans as $plan): ?>
-                        <option value="<?= $plan['PlanID']; ?>" <?= (isset($membership['PlanID']) && $membership['PlanID'] == $plan['PlanID']) ? 'selected' : ''; ?>>
-                            <?= htmlspecialchars($plan['PlanName'] . ' - ₱' . number_format($plan['Rate'], 2)); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <button type="submit" class="btn-primary-modern">
+                    <i class="bi bi-check-lg"></i>
+                    <?= $action === 'edit' ? "Update Membership" : ($action === 'renew' ? "Create Renewal" : "Create Membership") ?>
+                </button>
+                <a href="memberships.php" class="btn-secondary-modern" style="text-decoration: none;">
+                    Cancel
+                </a>
             </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label>Start Date</label>
-                <input type="date" name="StartDate" class="form-control" value="<?= $membership['StartDate'] ?? ''; ?>" required>
-            </div>
-
-            <div class="form-group col-md-6">
-                <label>Status (only applied if Cancelled)</label>
-                <select name="Status" class="form-control">
-                    <option value="Active">Active</option>
-                    <option value="Expired">Expired</option>
-                    <option value="Cancelled" <?= isset($membership['Status']) && $membership['Status'] == 'Cancelled' ? 'selected' : ''; ?>>
-                        Cancelled
-                    </option>
-                </select>
-            </div>
-        </div>
-
-        <button class="btn btn-success">
-            <?= $action === 'edit' ? "Update Membership" : ($action === 'renew' ? "Create Renewal" : "Create Membership"); ?>
-        </button>
-        <a href="memberships.php" class="btn btn-secondary">Cancel</a>
-    </form>
+        </form>
+    </div>
 
 <?php endif; ?>
 
+<!-- Include modals outside the if/else so scripts are always available -->
 <?php include 'includes/footer.php'; ?>
+<?php include 'includes/membership_add_modal.php'; ?>
+<?php include 'includes/membership_edit_modal.php'; ?>
+<?php include 'includes/membership_renew_modal.php'; ?>
+<?php include 'includes/membership_view_modal.php'; ?>
