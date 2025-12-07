@@ -1467,25 +1467,25 @@ body.modal-open {
     flex: 1;
 }
 
-/* Allow scrolling inside Edit Member modal */
-#memberEditModal .modal-body-modern {
+/* Allow scrolling inside Edit Member modal&Add member modal */
+.modal-overlay .modal-body-modern {
     max-height: 70vh;
     overflow-y: auto;
-    padding-right: 10px; /* prevent content from hiding under scrollbar */
-}
-
-#memberEditModal .modal-body-modern {
+    padding-right: 10px;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e0 #edf2f7;
 }
-#memberEditModal .modal-body-modern::-webkit-scrollbar {
+
+.modal-overlay .modal-body-modern::-webkit-scrollbar {
     width: 6px;
 }
-#memberEditModal .modal-body-modern::-webkit-scrollbar-thumb {
+
+.modal-overlay .modal-body-modern::-webkit-scrollbar-thumb {
     background: #cbd5e0;
     border-radius: 3px;
 }
-#memberEditModal .modal-body-modern::-webkit-scrollbar-track {
+
+.modal-overlay .modal-body-modern::-webkit-scrollbar-track {
     background: #edf2f7;
 }
 
@@ -1862,6 +1862,11 @@ body.modal-open {
     grid-column: 1 / -1;
 }
 
+.form-group-modern.shrink {
+    width: auto;
+}
+
+
 /* Form Labels */
 .form-label-modern {
     font-size: 14px;
@@ -1914,6 +1919,11 @@ select.form-control-modern {
     background-position: right 12px center;
     padding-right: 40px;
 }
+
+.form-control-small {
+    width: 180px;
+}
+
 
 /* Photo Upload */
 .photo-upload-container {
@@ -1973,6 +1983,7 @@ select.form-control-modern {
     justify-content: flex-end;
     gap: 12px;
     background-color: #f7fafc;
+    border-radius: 0 0 12px 12px; /* Rounds only bottom corners */
 }
 
 .btn-primary-modern,
@@ -2037,6 +2048,7 @@ select.form-control-modern {
     margin-top: 4px;
 }
 
+
 /* Responsive Form */
 @media (max-width: 768px) {
     .modal-dialog-large {
@@ -2060,5 +2072,243 @@ select.form-control-modern {
     .btn-secondary-modern {
         width: 100%;
         justify-content: center;
+    }
+}
+/* Toast Notification Styles */
+/* Add this to your style.css file */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    min-width: 320px;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: all;
+    border-left: 4px solid;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d3748;
+    line-height: 1.5;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #718096;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #2d3748;
+}
+
+/* Toast Types */
+.toast-success {
+    border-left-color: #48bb78;
+}
+
+.toast-success .toast-icon {
+    color: #48bb78;
+}
+
+.toast-error {
+    border-left-color: #f56565;
+}
+
+.toast-error .toast-icon {
+    color: #f56565;
+}
+
+.toast-warning {
+    border-left-color: #ed8936;
+}
+
+.toast-warning .toast-icon {
+    color: #ed8936;
+}
+
+.toast-info {
+    border-left-color: #4299e1;
+}
+
+.toast-info .toast-icon {
+    color: #4299e1;
+}
+
+/* Confirm Dialog Styles */
+.confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.confirm-overlay.show {
+    opacity: 1;
+}
+
+.confirm-overlay.show .confirm-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.confirm-dialog {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.confirm-icon {
+    font-size: 56px;
+    margin-bottom: 20px;
+}
+
+.confirm-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 12px 0;
+}
+
+.confirm-message {
+    font-size: 16px;
+    color: #718096;
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-actions button {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.btn-cancel {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-cancel:hover {
+    background: #cbd5e0;
+}
+
+.btn-confirm {
+    color: white;
+}
+
+.btn-confirm.btn-warning {
+    background: #ed8936;
+}
+
+.btn-confirm.btn-warning:hover {
+    background: #dd6b20;
+}
+
+.btn-confirm.btn-danger {
+    background: #f56565;
+}
+
+.btn-confirm.btn-danger:hover {
+    background: #e53e3e;
+}
+
+.btn-confirm.btn-info {
+    background: #4299e1;
+}
+
+.btn-confirm.btn-info:hover {
+    background: #3182ce;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .toast-container {
+        left: 20px;
+        right: 20px;
+    }
+    
+    .toast {
+        min-width: auto;
+        max-width: 100%;
+    }
+    
+    .confirm-dialog {
+        padding: 24px;
+    }
+    
+    .confirm-actions {
+        flex-direction: column;
+    }
+    
+    .confirm-actions button {
+        width: 100%;
     }
 }

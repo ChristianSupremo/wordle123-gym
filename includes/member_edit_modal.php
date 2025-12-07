@@ -252,6 +252,8 @@ function editMember(memberId) {
             console.error('Error:', error);
             document.getElementById('edit-member-loading').style.display = 'none';
             document.getElementById('edit-error').style.display = 'block';
+            // MODERN ERROR TOAST
+            toast.error('Failed to load member details. Please try again.', 5000);
         });
 }
 
@@ -267,6 +269,13 @@ function closeEditModal() {
 function previewEditPhoto(event) {
     const file = event.target.files[0];
     if (file) {
+        // Check file size - MODERN TOAST
+        if (file.size > 2 * 1024 * 1024) {
+            toast.warning('File size too large. Maximum 2MB allowed.', 5000);
+            event.target.value = '';
+            return;
+        }
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById('edit_photo_preview').src = e.target.result;
@@ -274,7 +283,6 @@ function previewEditPhoto(event) {
         reader.readAsDataURL(file);
     }
 }
-
 // Close modal when clicking outside
 document.addEventListener('mousedown', function(event) {
     const overlay = document.getElementById('memberEditModal');
@@ -285,7 +293,7 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-// Form submission
+// Form submission with MODERN TOAST NOTIFICATIONS
 document.getElementById('editMemberForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -303,20 +311,25 @@ document.getElementById('editMemberForm').addEventListener('submit', function(e)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success message
-            alert('Member updated successfully!');
+            // MODERN SUCCESS TOAST
+            toast.success('Member updated successfully! Refreshing...', 3000);
             closeEditModal();
-            // Reload the page to show updated data
-            window.location.reload();
+            
+            // Reload after a short delay so user can see the toast
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Error: ' + (data.message || 'Failed to update member'));
+            // MODERN ERROR TOAST
+            toast.error(data.message || 'Failed to update member. Please try again.', 5000);
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Save Changes';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to update member');
+        // MODERN ERROR TOAST
+        toast.error('Network error. Please check your connection and try again.', 5000);
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Save Changes';
     });

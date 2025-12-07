@@ -7,8 +7,9 @@ $action = $_GET['action'] ?? 'list';
 $member_id = $_GET['id'] ?? null;
 
 // Process POST save
-include 'controllers/member_save.php';
-
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
+    include 'controllers/member_save.php';
+}
 // Load data for add/edit
 include 'controllers/member_fetch.php';
 
@@ -72,7 +73,8 @@ include 'includes/header.php';
     </div>
 </div>
 
-<a href="members.php?action=add" class="add-member-btn">
+<!-- CHANGED: Add Member button now opens modal instead of navigating -->
+<a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddModal();">
     <i class="bi bi-plus-lg"></i> Add Member
 </a>
 </div>
@@ -166,11 +168,6 @@ document.getElementById('searchInput').addEventListener('keyup', function(e) {
             'members.php?action=list&search=' + encodeURIComponent(this.value);
     }
 });
-
-// View modal placeholder
-function viewMember(id) {
-    console.log("View member:", id);
-}
 </script>
 <?php else: ?>
 
@@ -178,6 +175,8 @@ function viewMember(id) {
 
 <?php endif; ?>
 
+<!-- CHANGED: Include all three modals -->
 <?php include 'includes/footer.php'; ?>
 <?php include 'includes/member_view_modal.php'; ?>
 <?php include 'includes/member_edit_modal.php'; ?>
+<?php include 'includes/member_add_modal.php'; ?>

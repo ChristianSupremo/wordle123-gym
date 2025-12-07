@@ -1,6 +1,4 @@
 <?php
-// includes/header.php
-// This check is to prevent errors if header is included before session starts
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -13,6 +11,8 @@ if (session_status() == PHP_SESSION_NONE) {
     <title>New You Fitness - Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/style/style.css">
+
+    <script src="assets/js/script.js" defer></script>
 </head>
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>
@@ -83,7 +83,7 @@ if (session_status() == PHP_SESSION_NONE) {
                         <span>Staff</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item">scrollbar
                     <a href="settings.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
                         <i class="bi bi-gear"></i>
                         <span>Settings</span>

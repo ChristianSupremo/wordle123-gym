@@ -29,8 +29,7 @@
                                         <i class="bi bi-person"></i> First Name
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_first_name" 
-                                           name="first_name" required>
+                                    <input type="text" class="form-control-modern" id="add_first_name" name="first_name" required>
                                 </div>
 
                                 <div class="form-group-modern">
@@ -38,8 +37,7 @@
                                         <i class="bi bi-person"></i> Last Name
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_last_name" 
-                                           name="last_name" required>
+                                    <input type="text" class="form-control-modern" id="add_last_name" name="last_name" required>
                                 </div>
 
                                 <div class="form-group-modern">
@@ -47,8 +45,7 @@
                                         <i class="bi bi-envelope"></i> Email
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="email" class="form-control-modern" id="add_email" 
-                                           name="email" required>
+                                    <input type="email" class="form-control-modern" id="add_email" name="email" required>
                                 </div>
 
                                 <div class="form-group-modern">
@@ -56,8 +53,7 @@
                                         <i class="bi bi-telephone"></i> Phone Number
                                         <span class="required">*</span>
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_phone" 
-                                           name="phone_no" required placeholder="09123456789">
+                                    <input type="text" class="form-control-modern" id="add_phone" name="phone_no" required placeholder="09123456789">
                                 </div>
 
                                 <div class="form-group-modern">
@@ -76,40 +72,35 @@
                                     <label for="add_dob" class="form-label-modern">
                                         <i class="bi bi-calendar"></i> Date of Birth
                                     </label>
-                                    <input type="date" class="form-control-modern" id="add_dob" 
-                                           name="date_of_birth">
+                                    <input type="date" class="form-control-modern" id="add_dob" name="date_of_birth">
                                 </div>
 
                                 <div class="form-group-modern full-width">
                                     <label for="add_address" class="form-label-modern">
                                         <i class="bi bi-house"></i> Address
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_address" 
-                                           name="address" placeholder="Street Address">
+                                    <input type="text" class="form-control-modern" id="add_address" name="address" placeholder="Street Address">
                                 </div>
 
                                 <div class="form-group-modern">
                                     <label for="add_city" class="form-label-modern">
                                         <i class="bi bi-building"></i> City
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_city" 
-                                           name="city" placeholder="City">
+                                    <input type="text" class="form-control-modern" id="add_city" name="city" placeholder="City">
                                 </div>
 
                                 <div class="form-group-modern">
                                     <label for="add_province" class="form-label-modern">
                                         <i class="bi bi-map"></i> Province
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_province" 
-                                           name="province" placeholder="Province">
+                                    <input type="text" class="form-control-modern" id="add_province" name="province" placeholder="Province">
                                 </div>
 
                                 <div class="form-group-modern">
                                     <label for="add_zipcode" class="form-label-modern">
                                         <i class="bi bi-mailbox"></i> Zipcode
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_zipcode" 
-                                           name="zipcode" placeholder="0000">
+                                    <input type="text" class="form-control-modern" id="add_zipcode" name="zipcode" placeholder="0000">
                                 </div>
                             </div>
                         </div>
@@ -125,35 +116,33 @@
                                     <label for="add_emergency_name" class="form-label-modern">
                                         <i class="bi bi-person-badge"></i> Contact Name
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_emergency_name" 
-                                           name="emergency_contact_name" placeholder="Full Name">
+                                    <input type="text" class="form-control-modern" id="add_emergency_name" name="emergency_contact_name" placeholder="Full Name">
                                 </div>
 
                                 <div class="form-group-modern">
                                     <label for="add_emergency_phone" class="form-label-modern">
                                         <i class="bi bi-telephone-plus"></i> Contact Number
                                     </label>
-                                    <input type="text" class="form-control-modern" id="add_emergency_phone" 
-                                           name="emergency_contact_number" placeholder="09123456789">
+                                    <input type="text" class="form-control-modern" id="add_emergency_phone" name="emergency_contact_number" placeholder="09123456789">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Membership Section -->
+                        <!-- Membership Section (FIXED) -->
                         <div class="form-section">
                             <h4 class="section-title-form">
                                 <i class="bi bi-card-checklist"></i> Membership Details
                             </h4>
-                            
+
                             <div class="form-grid">
                                 <div class="form-group-modern">
                                     <label for="add_status" class="form-label-modern">
                                         <i class="bi bi-check-circle"></i> Membership Status
                                     </label>
-                                    <select class="form-control-modern" id="add_status" name="membership_status">
-                                        <option value="Active" selected>Active</option>
+                                    <select class="form-control-modern form-control-small" id="add_status" name="membership_status">
+                                        <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
-                                        <option value="Pending">Pending</option>
+                                        <option value="Pending" selected>Pending</option>
                                     </select>
                                 </div>
 
@@ -161,7 +150,7 @@
                                     <label for="add_join_date" class="form-label-modern">
                                         <i class="bi bi-calendar-check"></i> Join Date
                                     </label>
-                                    <input type="date" class="form-control-modern" id="add_join_date" 
+                                    <input type="date" class="form-control-modern form-control-small" id="add_join_date" 
                                            name="join_date" value="<?= date('Y-m-d') ?>">
                                 </div>
                             </div>
@@ -175,7 +164,7 @@
                             
                             <div class="photo-upload-container">
                                 <div class="current-photo">
-                                    <img src="https://ui-avatars.com/api/?name=New+Member&background=4fd1c5&color=fff&size=200" 
+                                    <img src="https://ui-avatars.com/api/?name=New+Member&background=4fd1c5&color=fff&size=200"
                                          alt="Preview" id="add_photo_preview" class="photo-preview">
                                 </div>
                                 <div class="photo-upload-controls">
@@ -207,6 +196,7 @@
     </div>
 </div>
 
+
 <!-- ADD MEMBER MODAL JS -->
 <script>
 // Open add modal
@@ -233,9 +223,9 @@ function closeAddModal() {
 function previewAddPhoto(event) {
     const file = event.target.files[0];
     if (file) {
-        // Check file size
+        // Check file size - MODERN TOAST INSTEAD OF ALERT
         if (file.size > 2 * 1024 * 1024) {
-            alert('File size too large. Maximum 2MB allowed.');
+            toast.warning('File size too large. Maximum 2MB allowed.', 5000);
             event.target.value = '';
             return;
         }
@@ -277,7 +267,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Form submission
+// Form submission with MODERN TOAST NOTIFICATIONS
 document.getElementById('addMemberForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -295,20 +285,25 @@ document.getElementById('addMemberForm').addEventListener('submit', function(e) 
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success message
-            alert('Member created successfully!');
+            // MODERN SUCCESS TOAST
+            toast.success('Member created successfully! Refreshing...', 3000);
             closeAddModal();
-            // Reload the page to show new member
-            window.location.reload();
+            
+            // Reload after a short delay so user can see the toast
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Error: ' + (data.message || 'Failed to create member'));
+            // MODERN ERROR TOAST
+            toast.error(data.message || 'Failed to create member. Please try again.', 5000);
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Create Member';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to create member');
+        // MODERN ERROR TOAST
+        toast.error('Network error. Please check your connection and try again.', 5000);
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Create Member';
     });

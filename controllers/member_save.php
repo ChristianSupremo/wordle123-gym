@@ -1,5 +1,7 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['action'] ?? '') !== 'create') {
+    return;
+}
 
 $member_id = $_POST['member_id'] ?? null;
 $firstName = trim($_POST['FirstName']);
