@@ -224,8 +224,5 @@ document.addEventListener('DOMContentLoaded', function() {
         'savePaymentAddBtn',
         'Payment recorded successfully! Refreshing...'
     );
-    
-    // Debug: Check if membership options are in the DOM
-    console.log('Membership options count:', document.querySelectorAll('#add_payment_membership_dropdown .searchable-select-option').length);
 });
 </script>

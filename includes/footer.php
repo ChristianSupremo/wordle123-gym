@@ -62,7 +62,6 @@
             }
         });
     </script>
-    <script src="assets/js/script.js"></script>
     <script src="assets/js/memberships.js"></script>
     <script src="assets/js/membership_page.js"></script>
     <script src="assets/js/payment_modals.js"></script>

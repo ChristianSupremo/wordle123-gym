@@ -26,7 +26,7 @@ try {
             p.Remarks,
             CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
             pl.PlanName,
-            s.FullName AS StaffName
+            CONCAT(s.FirstName, ' ', s.LastName) AS StaffName
         FROM Payment p
         JOIN Membership m ON p.MembershipID = m.MembershipID
         JOIN Member mem ON m.MemberID = mem.MemberID

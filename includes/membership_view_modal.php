@@ -35,17 +35,17 @@
                     <!-- TABS -->
                     <ul class="tabs-modern" role="tablist">
                         <li class="tab-item-modern">
-                            <a class="tab-link-modern active" onclick="switchMembershipTab(event, 'tab-membership-info')">
+                            <a class="tab-link-modern active" onclick="switchTab(event, 'tab-membership-info')">
                                 <i class="bi bi-card-checklist"></i> Membership Info
                             </a>
                         </li>
                         <li class="tab-item-modern">
-                            <a class="tab-link-modern" onclick="switchMembershipTab(event, 'tab-member-profile')">
+                            <a class="tab-link-modern" onclick="switchTab(event, 'tab-member-profile')">
                                 <i class="bi bi-person"></i> Member Profile
                             </a>
                         </li>
                         <li class="tab-item-modern">
-                            <a class="tab-link-modern" onclick="switchMembershipTab(event, 'tab-payment-history')">
+                            <a class="tab-link-modern" onclick="switchTab(event, 'tab-payment-history')">
                                 <i class="bi bi-credit-card"></i> Payment History
                             </a>
                         </li>

@@ -9,7 +9,14 @@ if (!$id) {
 }
 
 // 1. Fetch member info
-$stmt = $pdo->prepare("SELECT * FROM member WHERE MemberID = ?");
+$stmt = $pdo->prepare("
+    SELECT 
+        m.*,
+        CONCAT(s.FirstName, ' ', s.LastName) AS StaffName
+    FROM Member m
+    LEFT JOIN Staff s ON m.CreatedBy = s.StaffID
+    WHERE m.MemberID = ?
+");
 $stmt->execute([$id]);
 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -28,7 +35,7 @@ $stmt = $pdo->prepare("
         m.EndDate,
         m.Status
     FROM Membership m
-    JOIN Plan p ON m.PlanID = p.PlanID
+    LEFT JOIN Plan p ON m.PlanID = p.PlanID
     WHERE m.MemberID = ?
     ORDER BY m.StartDate DESC
 ");
@@ -59,4 +66,3 @@ echo json_encode([
     "memberships" => $memberships,
     "payments" => $payments
 ]);
-?>

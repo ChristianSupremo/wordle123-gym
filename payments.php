@@ -59,15 +59,21 @@ if ($action === 'list') {
             p.ReferenceNumber,
             p.PaymentStatus,
             p.Remarks,
+            
+            -- Member Name
             CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
             mem.FirstName,
             mem.LastName,
+
             pl.PlanName,
             pl.Rate,
             m.StartDate,
             m.EndDate,
             m.Status AS MembershipStatus,
-            s.FullName AS StaffName
+
+            -- Updated Staff Name (no more FullName field)
+            CONCAT(s.FirstName, ' ', s.LastName) AS StaffName
+
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
         JOIN Plan pl ON m.PlanID = pl.PlanID
@@ -76,6 +82,7 @@ if ($action === 'list') {
         LEFT JOIN Staff s ON p.StaffID = s.StaffID
         WHERE 1=1
     ";
+
 
     $params = [];
 
@@ -283,9 +290,6 @@ $payment_methods = getPaymentMethods($pdo);
         </div>
     </div>
 </div>
-
-<!-- Include shared JavaScript -->
-<script src="assets/js/memberships.js"></script>
 
 <script>
 // Toggle filter dropdown

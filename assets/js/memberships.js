@@ -83,19 +83,55 @@ window.editMembership = function (membershipId) {
                 document.getElementById('edit_status').value = membership.Status;
 
                 // Set member selection
-                const memberOption = document.querySelector(`.searchable-select-option[data-value="${membership.MemberID}"]`);
-                if (memberOption) {
-                    document.getElementById('edit_member_id').value = membership.MemberID;
-                    document.getElementById('edit_member_search').value = memberOption.getAttribute('data-text');
+                document.getElementById('edit_member_id').value = membership.MemberID;
+                document.getElementById('edit_member_search').value = membership.MemberName;
+                
+                // Set plan selection
+                document.getElementById('edit_plan_search').value = membership.PlanName + ' - ₱' + parseFloat(membership.PlanRate).toFixed(2);
+                
+                // Set status selection
+                document.getElementById('edit_status_search').value = membership.Status;
 
-                    document.querySelectorAll('.searchable-select-option').forEach(opt => opt.classList.remove('selected'));
-                    memberOption.classList.add('selected');
-                }
+                // Mark selected options
+                document.querySelectorAll('#edit_member_dropdown .searchable-select-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    if (opt.getAttribute('data-value') == membership.MemberID) {
+                        opt.classList.add('selected');
+                    }
+                });
+                
+                document.querySelectorAll('#edit_plan_dropdown .searchable-select-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    if (opt.getAttribute('data-value') == membership.PlanID) {
+                        opt.classList.add('selected');
+                    }
+                });
+                
+                document.querySelectorAll('#edit_status_dropdown .searchable-select-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    if (opt.getAttribute('data-value') == membership.Status) {
+                        opt.classList.add('selected');
+                    }
+                });
 
-                // Initialize searchable selects **HERE**
-                initEditMemberSearch();
-                initSearchableSelect("edit_plan_search", "edit_plan_id", "edit_plan_dropdown");
-                initSearchableSelect("edit_status_search", "edit_status", "edit_status_dropdown");
+                // Initialize searchable selects with CORRECT parameter format
+                initSearchableSelect({
+                    searchInputId: 'edit_member_search',
+                    hiddenInputId: 'edit_member_id',
+                    dropdownId: 'edit_member_dropdown'
+                });
+                
+                initSearchableSelect({
+                    searchInputId: 'edit_plan_search',
+                    hiddenInputId: 'edit_plan_id',
+                    dropdownId: 'edit_plan_dropdown'
+                });
+                
+                initSearchableSelect({
+                    searchInputId: 'edit_status_search',
+                    hiddenInputId: 'edit_status',
+                    dropdownId: 'edit_status_dropdown'
+                });
 
             } else {
                 document.getElementById('edit-membership-loading').style.display = 'none';
@@ -152,40 +188,40 @@ document.addEventListener('keydown', function(event) {
 });
 
 // Form submission
-document.getElementById('editMembershipForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const saveBtn = document.getElementById('saveMembershipEditBtn');
-    
-    // Disable button and show loading
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Updating...';
-    
-    fetch('memberships.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        // Check if response redirected (successful form submission)
-        if (response.redirected) {
-            toast.success('Membership updated successfully! Refreshing...', 3000);
-            setTimeout(() => {
-                window.location.href = response.url;
-            }, 1000);
-        } else {
-            return response.text().then(text => {
+const editForm = document.getElementById('editMembershipForm');
+
+if (editForm) {
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const saveBtn = document.getElementById('saveMembershipEditBtn');
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Updating...';
+
+        fetch('memberships.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                toast.success('Membership updated successfully! Refreshing...', 3000);
+                setTimeout(() => {
+                    window.location.href = response.url;
+                }, 1000);
+            } else {
                 throw new Error('Update failed');
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toast.error('Failed to update membership. Please try again.', 5000);
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Update Membership';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            toast.error('Failed to update membership. Please try again.', 5000);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> Update Membership';
+        });
     });
-});
+}
 
 function initSearchableSelect(searchInputId, hiddenInputId, dropdownId) {
     const searchInput = document.getElementById(searchInputId);

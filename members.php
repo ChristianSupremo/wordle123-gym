@@ -33,7 +33,7 @@ include 'includes/header.php';
 <div class="search-filter-group">
     <div class="search-box">
         <i class="bi bi-search"></i>
-        <input type="text" placeholder="Search member..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
+        <input type="text" placeholder="Search member..." id="memberSearchInput" value="<?= htmlspecialchars($search) ?>">
     </div>
 
     <div class="filter-dropdown">
@@ -162,7 +162,7 @@ document.addEventListener('click', function(event) {
 });
 
 // Search on Enter
-document.getElementById('searchInput').addEventListener('keyup', function(e) {
+document.getElementById('memberSearchInput').addEventListener('keyup', function(e) {
     if (e.key === 'Enter') {
         window.location.href =
             'members.php?action=list&search=' + encodeURIComponent(this.value);

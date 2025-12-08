@@ -34,9 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // --- auto-compute status ---
-    $computed_status = ($status === 'Cancelled') 
-        ? 'Cancelled'
-        : (($end_date < date('Y-m-d')) ? 'Expired' : 'Active');
+    if ($membership_id) {
+        // Updating membership
+        if ($status === 'Cancelled') {
+            $computed_status = 'Cancelled';
+        } elseif ($status === 'Pending') {
+            $computed_status = 'Pending';
+        } else {
+            // Auto-compute Active or Expired
+            $computed_status = ($end_date < date('Y-m-d')) ? 'Expired' : 'Active';
+        }
+    } else {
+        // NEW membership → always Pending
+        $computed_status = 'Pending';
+    }
 
     $staff_id = $_SESSION['staff_id'];
 
@@ -115,7 +126,7 @@ if ($action === 'list') {
                DATEDIFF(m.EndDate, CURDATE()) AS DaysLeft
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
-        JOIN Plan p ON m.PlanID = p.PlanID
+        LEFT JOIN Plan p ON m.PlanID = p.PlanID
         WHERE 1=1
     ";
 
@@ -141,9 +152,10 @@ if ($action === 'list') {
         ORDER BY 
             CASE m.Status
                 WHEN 'Active' THEN 1
-                WHEN 'Expired' THEN 2
-                WHEN 'Cancelled' THEN 3
-                ELSE 4
+                WHEN 'Pending' THEN 2
+                WHEN 'Expired' THEN 3
+                WHEN 'Cancelled' THEN 4
+                ELSE 5
             END,
             mem.LastName,
             mem.FirstName
@@ -168,7 +180,7 @@ if ($action === 'list') {
     <div class="search-filter-group">
         <div class="search-box">
             <i class="bi bi-search"></i>
-            <input type="text" placeholder="Search member..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
+            <input type="text" placeholder="Search membership..." id="membershipsearchInput" value="<?= htmlspecialchars($search) ?>">
         </div>
 
         <div class="filter-dropdown">
@@ -190,6 +202,12 @@ if ($action === 'list') {
                         <input type="radio" name="status_filter" value="Active" id="filterActive"
                             <?= $status_filter == 'Active' ? 'checked' : '' ?> onchange="this.form.submit()">
                         <label for="filterActive">Active</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Pending" id="filterPending"
+                            <?= $status_filter == 'Pending' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterPending">Pending</label>
                     </div>
 
                     <div class="filter-option">
@@ -233,27 +251,37 @@ if ($action === 'list') {
                 <?php foreach ($memberships as $m): ?>
                     <tr>
                         <td><?= htmlspecialchars($m['MemberName']) ?></td>
-                        <td><?= htmlspecialchars($m['PlanName']) ?></td>
-                        <td><?= date('m/d/y', strtotime($m['StartDate'])) ?></td>
-                        <td><?= date('m/d/y', strtotime($m['EndDate'])) ?></td>
                         <td>
-                            <?php
-                            $daysLeft = $m['DaysLeft'];
-                            if ($m['Status'] === 'Cancelled') {
-                                echo '<span style="color: #718096;">Cancelled</span>';
-                            } elseif ($m['Status'] === 'Expired') {
-                                $daysExpired = abs($daysLeft);
-                                echo '<span style="color: #e53e3e;">Expired (' . $daysExpired . ' day' . ($daysExpired != 1 ? 's' : '') . ')</span>';
-                            } elseif ($daysLeft < 0) {
-                                echo '<span style="color: #e53e3e;">Expired</span>';
-                            } elseif ($daysLeft == 0) {
-                                echo '<span style="color: #dd6b20;">Expires today</span>';
-                            } elseif ($daysLeft <= 7) {
-                                echo '<span style="color: #dd6b20;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
-                            } else {
-                                echo '<span style="color: #38a169;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
-                            }
-                            ?>
+                            <?= $m['PlanName'] ? htmlspecialchars($m['PlanName']) : '<span style="color:#718096;">No Plan Assigned</span>' ?>
+                        </td>
+                        <td>
+                            <?= $m['StartDate'] ? date('m/d/y', strtotime($m['StartDate'])) : '—' ?>
+                        </td>
+                        <td>
+                            <?= $m['EndDate'] ? date('m/d/y', strtotime($m['EndDate'])) : '—' ?>
+                        </td>
+                        <td>
+                            <?php if ($m['Status'] === 'Pending'): ?>
+                                <span style="color:#718096;">—</span>
+                            <?php else: ?>
+                                <?php
+                                $daysLeft = $m['DaysLeft'];
+                                if ($m['Status'] === 'Cancelled') {
+                                    echo '<span style="color: #718096;">Cancelled</span>';
+                                } elseif ($m['Status'] === 'Expired') {
+                                    $daysExpired = abs($daysLeft);
+                                    echo '<span style="color: #e53e3e;">Expired (' . $daysExpired . ' day' . ($daysExpired != 1 ? 's' : '') . ')</span>';
+                                } elseif ($daysLeft < 0) {
+                                    echo '<span style="color: #e53e3e;">Expired</span>';
+                                } elseif ($daysLeft == 0) {
+                                    echo '<span style="color: #dd6b20;">Expires today</span>';
+                                } elseif ($daysLeft <= 7) {
+                                    echo '<span style="color: #dd6b20;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
+                                } else {
+                                    echo '<span style="color: #38a169;">' . $daysLeft . ' day' . ($daysLeft != 1 ? 's' : '') . ' left</span>';
+                                }
+                                ?>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <span class="status-badge <?= strtolower($m['Status']) ?>">
@@ -364,8 +392,18 @@ function openAddMembershipModal() {
                         <i class="bi bi-check-circle"></i> Status
                     </label>
                     <select name="Status" class="form-control-modern">
-                        <option value="Active">Active</option>
-                        <option value="Expired">Expired</option>
+                        <option value="Pending"
+                            <?= isset($membership['Status']) && $membership['Status'] == 'Pending' ? 'selected' : '' ?>>
+                            Pending
+                        </option>
+                        <option value="Active"
+                            <?= isset($membership['Status']) && $membership['Status'] == 'Active' ? 'selected' : '' ?>>
+                            Active
+                        </option>
+                        <option value="Expired"
+                            <?= isset($membership['Status']) && $membership['Status'] == 'Expired' ? 'selected' : '' ?>>
+                            Expired
+                        </option>
                         <option value="Cancelled" 
                             <?= isset($membership['Status']) && $membership['Status'] == 'Cancelled' ? 'selected' : '' ?>>
                             Cancelled

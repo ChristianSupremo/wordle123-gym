@@ -108,7 +108,7 @@ function viewMembershipDetails(membershipId) {
                 }
 
                 // Reset to first tab
-                switchMembershipTab({preventDefault: () => {}}, 'tab-membership-info');
+                switchTab({preventDefault: () => {}}, 'tab-membership-info');
 
             } else {
                 document.getElementById('membership-details-loading').style.display = 'none';
@@ -159,23 +159,23 @@ document.addEventListener('keydown', function(event) {
 });
 
 // Switch tabs function
-function switchMembershipTab(event, tabId) {
-    event.preventDefault();
-    
+function switchTab(event, tabId) {
+    if (event) event.preventDefault();
+
     // Remove active from all tabs
-    document.querySelectorAll('#membershipViewModal .tab-link-modern').forEach(tab => {
+    document.querySelectorAll('.tab-link-modern').forEach(tab => {
         tab.classList.remove('active');
     });
-    
+
     // Remove active from all panes
-    document.querySelectorAll('#membershipViewModal .tab-pane-modern').forEach(pane => {
+    document.querySelectorAll('.tab-pane-modern').forEach(pane => {
         pane.classList.remove('active');
     });
-    
-    // Add active to clicked tab
-    const tabLink = event.target?.closest('.tab-link-modern');
-    if (tabLink) tabLink.classList.add('active');
-    
-    // Show corresponding pane
+
+    // Activate correct TAB LINK automatically
+    const properTabLink = document.querySelector(`[data-tab="${tabId}"]`);
+    if (properTabLink) properTabLink.classList.add('active');
+
+    // Show the corresponding content pane
     document.getElementById(tabId).classList.add('active');
 }

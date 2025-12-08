@@ -13,7 +13,6 @@ if (session_status() == PHP_SESSION_NONE) {
     <link rel="stylesheet" href="assets/css/style/style.css">
 
     <script src="assets/js/script.js" defer></script>
-    <script src="assets/js/memberships.js"></script>
 </head>
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>

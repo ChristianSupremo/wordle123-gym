@@ -105,6 +105,11 @@
                                     </div>
                                     <div class="info-value-modern" id="view-emergency-number"></div>
                                 </div>
+
+                                <div class="info-item-modern">
+                                    <div class="info-label-modern"><i class="bi bi-person-badge"></i> Registered By</div>
+                                    <div class="info-value-modern" id="view-member-staff"></div>
+                                </div>
                             </div>
                         </div>
 
@@ -199,6 +204,7 @@ function viewMember(memberId) {
 
             document.getElementById('view-emergency-name').textContent = member.EmergencyContactName || 'N/A';
             document.getElementById('view-emergency-number').textContent = member.EmergencyContactNumber || 'N/A';
+            document.getElementById('view-member-staff').textContent = member.StaffName || 'N/A';
 
             // STATUS BADGE
             const badge = document.getElementById('view-status-badge');
@@ -249,7 +255,7 @@ function viewMember(memberId) {
             }
 
             // Reset to first tab
-            switchTab({preventDefault: () => {}}, 'tab-profile');
+            switchTab(null, 'tab-profile');
         })
         .catch(error => {
             console.error('Error:', error);

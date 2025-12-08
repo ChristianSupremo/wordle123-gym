@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt->execute([$username]);
     $staff = $stmt->fetch();
 
-    if ($staff && password_verify($password, $staff['Password'])) {
+    if ($staff && password_verify($password, $staff['PasswordHash'])) {
         // Password is correct, start a new session
         $_SESSION['staff_id'] = $staff['StaffID'];
         $_SESSION['staff_name'] = $staff['FullName'];

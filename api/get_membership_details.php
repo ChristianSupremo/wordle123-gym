@@ -43,10 +43,10 @@ try {
             p.Rate AS PlanRate,
             p.Duration,
             p.PlanType,
-            s.FullName AS StaffName
+            CONCAT(s.FirstName, ' ', s.LastName) AS StaffName
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
-        JOIN Plan p ON m.PlanID = p.PlanID
+        LEFT JOIN Plan p ON m.PlanID = p.PlanID
         LEFT JOIN Staff s ON m.StaffID = s.StaffID
         WHERE m.MembershipID = ?
     ";

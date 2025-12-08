@@ -85,23 +85,25 @@ try {
 
     // Insert member into database
     $sql = "INSERT INTO Member (
-                FirstName, 
-                LastName, 
-                Email, 
-                PhoneNo, 
-                Gender, 
-                DateOfBirth, 
-                Address, 
-                City, 
-                Province, 
-                Zipcode, 
-                EmergencyContactName, 
-                EmergencyContactNumber, 
-                MembershipStatus,
-                JoinDate,
-                Photo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+        FirstName,
+        LastName,
+        Email,
+        PhoneNo,
+        Gender,
+        DateOfBirth,
+        Address,
+        City,
+        Province,
+        Zipcode,
+        EmergencyContactName,
+        EmergencyContactNumber,
+        MembershipStatus,
+        JoinDate,
+        Photo,
+        CreatedBy,
+        CreatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         $first_name,
@@ -118,10 +120,22 @@ try {
         $emergency_contact_number,
         $membership_status,
         $join_date,
-        $photo_filename
+        $photo_filename,
+        $_SESSION['staff_id']
     ]);
 
     $member_id = $pdo->lastInsertId();
+
+    // --- AUTO-CREATE Pending Membership for new member ---
+    $stmt = $pdo->prepare("
+        INSERT INTO Membership (MemberID, PlanID, StaffID, StartDate, EndDate, Status)
+        VALUES (?, NULL, ?, NULL, NULL, 'Pending')
+    ");
+
+    $stmt->execute([
+        $member_id,
+        $_SESSION['staff_id']
+    ]);
 
     echo json_encode([
         'success' => true,

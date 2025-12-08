@@ -14,7 +14,7 @@ document.addEventListener('click', function(event) {
 
 // Search on Enter
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput');
+    const searchInput = document.getElementById('membershipSearchInput');
     if (!searchInput) return;
 
     searchInput.addEventListener('keyup', function(e) {
