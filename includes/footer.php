@@ -63,7 +63,10 @@
         });
     </script>
     <script src="assets/js/memberships.js"></script>
-    <script src="assets/js/membership_page.js"></script>
+    <?php if (basename($_SERVER['PHP_SELF']) == 'memberships.php'): ?>
+        <script src="assets/js/membership_page.js"></script>
+    <?php endif; ?>
     <script src="assets/js/payment_modals.js"></script>
+    <script src="assets/js/capslock_detector.js"></script>
 </body>
 </html>

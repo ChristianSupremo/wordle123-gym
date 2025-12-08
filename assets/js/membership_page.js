@@ -7,8 +7,10 @@ function toggleFilter() {
 document.addEventListener('click', function(event) {
     const filterBtn = document.querySelector('.filter-btn');
     const dropdown = document.getElementById('filterDropdown');
+    if (filterBtn && dropdown) {
     if (!filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
         dropdown.classList.remove('show');
+        }
     }
 });
 

@@ -19,9 +19,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $staff = $stmt->fetch();
 
     if ($staff && password_verify($password, $staff['PasswordHash'])) {
+
+        // UPDATE LAST LOGIN
+        $pdo->prepare("UPDATE Staff SET LastLogin = NOW() WHERE StaffID = ?")
+            ->execute([$staff['StaffID']]);
+
         // Password is correct, start a new session
         $_SESSION['staff_id'] = $staff['StaffID'];
-        $_SESSION['staff_name'] = $staff['FullName'];
+        $_SESSION['staff_name'] = $staff['FirstName'] . ' ' . $staff['LastName'];
         $_SESSION['role_id'] = $staff['RoleID'];
 
         header('Location: dashboard.php');

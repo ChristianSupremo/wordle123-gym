@@ -1,208 +1,232 @@
 <?php
 require_once 'config/db.php';
 require_once 'includes/functions.php';
+require_once 'includes/staff_modal_helpers.php';
 check_login();
 
- $action = $_GET['action'] ?? 'list';
- $staff_id = $_GET['id'] ?? null;
+// Handle search and filter
+$status_filter = $_GET['status_filter'] ?? 'All';
+$search = trim($_GET['search'] ?? '');
 
-// --- Handle Form Submissions (Add/Edit) ---
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $staff_id = $_POST['staff_id'] ?? null;
-    $full_name = trim($_POST['FullName']);
-    $username = trim($_POST['Username']);
-    $role_id = $_POST['RoleID'];
-    $hire_date = $_POST['HireDate'];
-    $status = $_POST['Status'];
-    $password = $_POST['Password']; // Can be empty on edit
+// Get all staff with filtering
+$staff_list = getAllStaff($pdo, $status_filter, $search);
 
-    // Basic validation
-    if ($full_name && $username && $role_id && $hire_date) {
-        if ($staff_id) {
-            // --- UPDATE existing staff member ---
-            if (!empty($password)) {
-                // If a new password is provided, hash it and update
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $sql = "UPDATE Staff SET FullName=?, RoleID=?, Username=?, Password=?, HireDate=?, Status=? WHERE StaffID=?";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$full_name, $role_id, $username, $hashed_password, $hire_date, $status, $staff_id]);
-            } else {
-                // If password is empty, do not update the password field
-                $sql = "UPDATE Staff SET FullName=?, RoleID=?, Username=?, HireDate=?, Status=? WHERE StaffID=?";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$full_name, $role_id, $username, $hire_date, $status, $staff_id]);
-            }
-            $_SESSION['message'] = "Staff member updated successfully!";
-        } else {
-            // --- ADD new staff member ---
-            if (empty($password)) {
-                $_SESSION['message'] = "Password is required for new staff members.";
-                $_SESSION['message_type'] = "error";
-                header("Location: staff.php?action=add");
-                exit();
-            }
-            // Hash the password before storing
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO Staff (FullName, RoleID, Username, Password, HireDate, Status) VALUES (?, ?, ?, ?, ?, ?)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$full_name, $role_id, $username, $hashed_password, $hire_date, $status]);
-            $_SESSION['message'] = "New staff member added successfully!";
-        }
-        $_SESSION['message_type'] = "success";
-        header('Location: staff.php');
-        exit();
-    } else {
-        $_SESSION['message'] = "Please fill in all required fields.";
-        $_SESSION['message_type'] = "error";
-        $redirect_url = $staff_id ? "staff.php?action=edit&id=$staff_id" : "staff.php?action=add";
-        header("Location: $redirect_url");
-        exit();
-    }
-}
+// Get all roles for modals
+$roles = getAllRoles($pdo);
 
-// --- Handle Activate/Deactivate ---
-if ($action === 'toggle_status' && $staff_id) {
-    // Prevent a user from deactivating themselves
-    if ($staff_id == $_SESSION['staff_id']) {
-        $_SESSION['message'] = "You cannot deactivate your own account.";
-        $_SESSION['message_type'] = "error";
-    } else {
-        $sql = "UPDATE Staff SET Status = NOT Status WHERE StaffID = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$staff_id]);
-        $_SESSION['message'] = "Staff status updated successfully!";
-        $_SESSION['message_type'] = "success";
-    }
-    header('Location: staff.php');
-    exit();
-}
-
-
-// --- Handle Page Rendering ---
-if ($action === 'edit' && $staff_id) {
-    $stmt = $pdo->prepare("SELECT * FROM Staff WHERE StaffID = ?");
-    $stmt->execute([$staff_id]);
-    $staff_member = $stmt->fetch();
-    if (!$staff_member) {
-        $_SESSION['message'] = "Staff member not found.";
-        $_SESSION['message_type'] = "error";
-        header('Location: staff.php');
-        exit();
-    }
-} elseif ($action === 'add') {
-    // Set up empty staff member object for the form
-    $staff_member = [
-        'StaffID' => null, 'FullName' => '', 'Username' => '', 'RoleID' => '',
-        'HireDate' => date('Y-m-d'), 'Status' => 'Active'
-    ];
-}
-
-// Fetch all roles for the dropdown
- $roles = $pdo->query("SELECT RoleID, RoleName FROM Roles ORDER BY RoleName")->fetchAll();
-
-// If action is list, show the list of staff
-if ($action === 'list') {
-    $stmt = $pdo->query("
-        SELECT s.StaffID, s.FullName, s.Username, s.HireDate, s.Status, r.RoleName
-        FROM Staff s
-        JOIN Roles r ON s.RoleID = r.RoleID
-        ORDER BY s.FullName
-    ");
-    $staff_list = $stmt->fetchAll();
-}
-
+include 'includes/header.php';
 ?>
 
-<?php include 'includes/header.php'; ?>
+<div class="page-header">
+    <h1 class="page-title">Staff Management</h1>
+</div>
 
-<?php if ($action === 'list'): ?>
-    <h2>Staff Management</h2>
-    <a href="staff.php?action=add" class="btn btn-primary mb-3">Add New Staff</a>
-    <table class="table table-bordered table-hover">
-        <thead class="thead-light">
+<!-- Search, Filter, Add -->
+<div class="page-actions">
+    <div class="search-filter-group">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search staff..." id="staffSearchInput" value="<?= htmlspecialchars($search) ?>">
+        </div>
+
+        <div class="filter-dropdown">
+            <button class="filter-btn" onclick="toggleStaffFilter()">
+                <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
+            </button>
+
+            <div class="filter-dropdown-content" id="staffFilterDropdown">
+                <form method="GET" action="staff.php">
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="All" id="filterAll"
+                            <?= $status_filter == 'All' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterAll">All Status</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Active" id="filterActive"
+                            <?= $status_filter == 'Active' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterActive">Active</label>
+                    </div>
+
+                    <div class="filter-option">
+                        <input type="radio" name="status_filter" value="Inactive" id="filterInactive"
+                            <?= $status_filter == 'Inactive' ? 'checked' : '' ?> onchange="this.form.submit()">
+                        <label for="filterInactive">Inactive</label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddStaffModal();">
+        <i class="bi bi-plus-lg"></i> Add Staff
+    </a>
+</div>
+
+<!-- Staff Table -->
+<div class="members-table-container">
+    <table class="members-table">
+        <thead>
             <tr>
-                <th>Name</th>
-                <th>Username</th>
+                <th>Staff ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
                 <th>Role</th>
-                <th>Hire Date</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Hire Date</th>
+                <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
-            <?php foreach ($staff_list as $s): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($s['FullName']); ?></td>
-                <td><?php echo htmlspecialchars($s['Username']); ?></td>
-                <td><?php echo htmlspecialchars($s['RoleName']); ?></td>
-                <td><?php echo date('M j, Y', strtotime($s['HireDate'])); ?></td>
-                <td>
-                    <span class="badge badge-<?php echo $s['Status'] == 'Active' ? 'success' : 'secondary'; ?>">
-                        <?php echo $s['Status']; ?>
-                    </span>
-                </td>
-                <td>
-                    <a href="staff.php?action=edit&id=<?php echo $s['StaffID']; ?>" class="btn btn-sm btn-info">Edit</a>
-                    <?php if ($s['StaffID'] != $_SESSION['staff_id']): ?>
-                    <a href="staff.php?action=toggle_status&id=<?php echo $s['StaffID']; ?>" class="btn btn-sm <?php echo $s['Status'] == 'Active' ? 'btn-warning' : 'btn-success'; ?>">
-                        <?php echo $s['Status'] == 'Active' ? 'Deactivate' : 'Activate'; ?>
-                    </a>
-                    <?php endif; ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
+            <?php if (count($staff_list) > 0): ?>
+                <?php foreach ($staff_list as $staff): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($staff['StaffID']) ?></td>
+
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="<?= $staff['Photo'] ? 'assets/uploads/staff/' . $staff['Photo'] : 'assets/uploads/staff/admin.png' ?>" 
+                                     alt="<?= htmlspecialchars($staff['FullName']) ?>"
+                                     style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                <span><?= htmlspecialchars($staff['FullName']) ?></span>
+                            </div>
+                        </td>
+
+                        <td><?= htmlspecialchars($staff['Email']) ?></td>
+
+                        <td>
+                            <span class="role-badge <?= getRoleBadgeClass($staff['AccessLevel']) ?>">
+                                <?= htmlspecialchars($staff['RoleName']) ?>
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="status-badge <?= strtolower($staff['Status']) ?>">
+                                <?= htmlspecialchars($staff['Status']) ?>
+                            </span>
+                        </td>
+
+                        <td><?= date('M j, Y', strtotime($staff['HireDate'])) ?></td>
+
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view-member-btn"
+                                        onclick="viewStaff(<?= $staff['StaffID'] ?>)"
+                                        title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                                <button class="action-btn edit-member-btn" 
+                                        onclick="editStaff(<?= $staff['StaffID'] ?>)"
+                                        title="Edit Staff">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                <?php if ($staff['StaffID'] != $_SESSION['staff_id']): ?>
+                                    <button class="action-btn delete-member-btn"
+                                            onclick="toggleStaffStatus(<?= $staff['StaffID'] ?>, '<?= $staff['Status'] ?>', '<?= htmlspecialchars($staff['FullName']) ?>')"
+                                            title="<?= $staff['Status'] == 'Active' ? 'Deactivate' : 'Activate' ?>">
+                                        <i class="bi bi-<?= $staff['Status'] == 'Active' ? 'slash-circle' : 'check-circle' ?>"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:40px; color:#718096;">
+                        No staff members found
+                    </td>
+                </tr>
+            <?php endif; ?>
         </tbody>
     </table>
 
-<?php elseif ($action === 'add' || $action === 'edit'): ?>
-    <h2><?php echo $staff_member['StaffID'] ? 'Edit Staff Member' : 'Add New Staff Member'; ?></h2>
-    <form action="staff.php" method="post">
-        <input type="hidden" name="staff_id" value="<?php echo $staff_member['StaffID']; ?>">
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label for="FullName">Full Name</label>
-                <input type="text" class="form-control" name="FullName" value="<?php echo htmlspecialchars($staff_member['FullName']); ?>" required>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="Username">Username</label>
-                <input type="text" class="form-control" name="Username" value="<?php echo htmlspecialchars($staff_member['Username']); ?>" required>
-            </div>
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing 1 to <?= count($staff_list) ?> of <?= count($staff_list) ?> results
         </div>
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label for="RoleID">Role</label>
-                <select name="RoleID" class="form-control" required>
-                    <?php foreach ($roles as $role): ?>
-                        <option value="<?php echo $role['RoleID']; ?>" <?php echo ($staff_member['RoleID'] == $role['RoleID']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($role['RoleName']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="HireDate">Hire Date</label>
-                <input type="date" class="form-control" name="HireDate" value="<?php echo htmlspecialchars($staff_member['HireDate']); ?>" required>
-            </div>
+        <div class="pagination">
+            <button class="pagination-btn" disabled><i class="bi bi-chevron-left"></i></button>
+            <button class="pagination-btn active">1</button>
         </div>
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label for="Password">Password</label>
-                <input type="password" class="form-control" name="Password" placeholder="<?php echo $staff_member['StaffID'] ? 'Leave blank to keep current' : 'Enter new password'; ?>">
-                <?php if ($staff_member['StaffID']): ?>
-                    <small class="form-text text-muted">Leave this field blank if you don't want to change the password.</small>
-                <?php endif; ?>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="Status">Status</label>
-                <select name="Status" class="form-control" required>
-                    <option value="Active" <?php echo ($staff_member['Status'] == 'Active') ? 'selected' : ''; ?>>Active</option>
-                    <option value="Inactive" <?php echo ($staff_member['Status'] == 'Inactive') ? 'selected' : ''; ?>>Inactive</option>
-                </select>
-            </div>
-        </div>
-        <button type="submit" class="btn btn-success"><?php echo $staff_member['StaffID'] ? 'Update Staff' : 'Add Staff'; ?></button>
-        <a href="staff.php" class="btn btn-secondary">Cancel</a>
-    </form>
-<?php endif; ?>
+    </div>
+</div>
+
+<script>
+// Toggle filter dropdown
+function toggleStaffFilter() {
+    document.getElementById('staffFilterDropdown').classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const filterBtn = document.querySelector('.filter-btn');
+    const dropdown = document.getElementById('staffFilterDropdown');
+    if (filterBtn && dropdown && !filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Search on Enter
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('staffSearchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            window.location.href = 'staff.php?search=' + encodeURIComponent(this.value);
+        }
+    });
+});
+
+// Toggle staff status (activate/deactivate)
+async function toggleStaffStatus(staffId, currentStatus, staffName) {
+    const action = currentStatus === 'Active' ? 'deactivate' : 'activate';
+    const actionText = action.charAt(0).toUpperCase() + action.slice(1);
+    
+    const confirmed = await confirm.show({
+        title: `${actionText} Staff Member`,
+        message: `Are you sure you want to ${action} ${staffName}?`,
+        confirmText: actionText,
+        cancelText: 'Cancel',
+        type: currentStatus === 'Active' ? 'warning' : 'info'
+    });
+    
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch('api/toggle_staff_status.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ staff_id: staffId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            toast.success(data.message);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            toast.error(data.message || 'Failed to update staff status');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        toast.error('An error occurred while updating staff status');
+    }
+}
+
+
+</script>
 
 <?php include 'includes/footer.php'; ?>
+<?php include 'includes/staff_view_modal.php'; ?>
+<?php include 'includes/staff_add_modal.php'; ?>
+<?php include 'includes/staff_edit_modal.php'; ?>

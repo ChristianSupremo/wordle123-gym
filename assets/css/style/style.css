@@ -2752,38 +2752,33 @@ input[type="number"].form-control-modern::-webkit-inner-spin-button {
 
 /* Role Badge Styles */
 .role-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: inline-block;
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .role-badge.role-admin {
-    background-color: #fef3c7;
-    color: #92400e;
-    border-color: #fde68a;
+    background: #fed7d7;
+    color: #c53030;
 }
 
 .role-badge.role-manager {
-    background-color: #dbeafe;
-    color: #1e40af;
-    border-color: #bfdbfe;
+    background: #feebc8;
+    color: #c05621;
 }
 
 .role-badge.role-receptionist {
-    background-color: #e0e7ff;
-    color: #4338ca;
-    border-color: #c7d2fe;
+    background: #c6f6d5;
+    color: #22543d;
 }
 
 .role-badge.role-default {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border-color: #e5e7eb;
+    background: #e2e8f0;
+    color: #2d3748;
 }
 
 /* Staff Photo Styles */
@@ -3067,5 +3062,281 @@ input[type="number"].form-control-modern::-webkit-inner-spin-button {
     
     .btn-copy-password {
         width: 100%;
+    }
+}
+
+/* ========================================
+   STAFF MODALS - PASSWORD & PHOTO UPLOAD
+   ======================================== */
+
+/* Password Input Group */
+.password-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-group .form-control-modern {
+    padding-right: 45px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+    color: #4fd1c5;
+}
+
+.password-toggle-btn:focus {
+    outline: none;
+}
+
+/* Photo Upload Section */
+.photo-upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 2px dashed #e2e8f0;
+}
+
+.photo-preview-container {
+    position: relative;
+    display: inline-block;
+}
+
+.photo-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.photo-upload-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #4fd1c5;
+    color: white;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(79, 209, 197, 0.4);
+}
+
+.photo-upload-btn:hover {
+    background: #38b2ac;
+    transform: scale(1.1);
+}
+
+.photo-upload-btn i {
+    font-size: 18px;
+}
+
+
+.photo-upload-btn span {
+    display: none;
+}
+
+.photo-upload-hint {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #64748b;
+    text-align: center;
+}
+
+.photo-upload-hint i {
+    margin-right: 4px;
+    color: #4fd1c5;
+}
+
+/* Form Hint */
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Form Section */
+.form-section-modern {
+    margin-bottom: 24px;
+}
+
+.form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section-title::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: #4fd1c5;
+    border-radius: 2px;
+}
+
+/* Required asterisk */
+.required {
+    color: #e53e3e;
+    margin-left: 2px;
+}
+
+/* Form Grid Modern */
+.form-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.form-grid-modern .full-width {
+    grid-column: 1 / -1;
+}
+
+/* Form Group Modern */
+.form-group-modern {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label-modern {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 6px;
+}
+
+.form-control-modern {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2d3748;
+    transition: all 0.2s;
+    background-color: #fff;
+}
+
+.form-control-modern:focus {
+    outline: none;
+    border-color: #4fd1c5;
+    box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.1);
+}
+
+.form-control-modern::placeholder {
+    color: #cbd5e0;
+}
+
+/* Select Styling */
+select.form-control-modern {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 36px;
+}
+
+/* Modal Dialog Large */
+.modal-dialog-large {
+    max-width: 700px;
+}
+
+/* Loading State Modern */
+.loading-state-modern {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+}
+
+.spinner-modern {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #4fd1c5;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-state-modern p {
+    margin-top: 16px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Error State Modern */
+.error-state-modern {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+}
+
+.error-state-modern i {
+    font-size: 48px;
+    color: #f56565;
+    margin-bottom: 16px;
+}
+
+.error-state-modern p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-grid-modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-dialog-modern,
+    .modal-dialog-large {
+        max-width: 95%;
+        margin: 20px auto;
+    }
+    
+    .photo-upload-section {
+        padding: 16px;
+    }
+    
+    .photo-preview {
+        width: 100px;
+        height: 100px;
     }
 }
