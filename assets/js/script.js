@@ -1,6 +1,3 @@
-// Modern Toast Notification System
-// Add this to your script.js file
-
 class ToastNotification {
     constructor() {
         this.container = null;
@@ -150,22 +147,120 @@ class ConfirmDialog {
 // Initialize confirm dialog globally
 const confirm = new ConfirmDialog();
 
-// Example usage:
-// toast.success('Member created successfully!');
-// toast.error('Failed to create member');
-// toast.warning('File size too large');
-// toast.info('Please fill all required fields');
-//
-// const confirmed = await confirm.show({
-//     title: 'Delete Member',
-//     message: 'Are you sure you want to delete this member? This action cannot be undone.',
-//     confirmText: 'Delete',
-//     cancelText: 'Cancel',
-//     type: 'danger'
-// });
-// if (confirmed) {
-//     // Do delete action
-// }
+// ========================================
+// SIDEBAR TOGGLE FUNCTIONALITY
+// ========================================
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const body = document.body;
+    
+    sidebar.classList.toggle('collapsed');
+    body.classList.toggle('sidebar-collapsed');
+    
+    // Save state to localStorage
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
+}
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('active');
+    
+    // Add/remove overlay
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = toggleMobileMenu;
+        document.body.appendChild(overlay);
+    }
+    overlay.classList.toggle('active');
+}
+
+// ========================================
+// DARK MODE FUNCTIONALITY
+// ========================================
+
+function initDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    
+    if (!darkModeToggle) return;
+    
+    // Check for saved dark mode preference
+    const darkModeEnabled = localStorage.getItem('darkMode') === 'enabled';
+    
+    if (darkModeEnabled) {
+        document.body.classList.add('dark-mode');
+        darkModeToggle.checked = true;
+    }
+    
+    // Toggle dark mode
+    darkModeToggle.addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'enabled');
+            toast.success('Dark mode enabled');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'disabled');
+            toast.success('Light mode enabled');
+        }
+    });
+}
+
+// ========================================
+// INITIALIZATION ON PAGE LOAD
+// ========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore sidebar state
+    const sidebar = document.getElementById('sidebar');
+    const body = document.body;
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (isCollapsed && sidebar) {
+        sidebar.classList.add('collapsed');
+        body.classList.add('sidebar-collapsed');
+    }
+    
+    // Initialize dark mode
+    initDarkMode();
+    
+    // Handle mobile menu
+    handleMobileMenu();
+});
+
+// ========================================
+// MOBILE MENU HANDLING
+// ========================================
+
+function handleMobileMenu() {
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const mobileToggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('active')) {
+            if (!sidebar.contains(event.target) && !mobileToggle.contains(event.target)) {
+                sidebar.classList.remove('active');
+                const overlay = document.querySelector('.sidebar-overlay');
+                if (overlay) overlay.classList.remove('active');
+            }
+        }
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        const sidebar = document.getElementById('sidebar');
+        if (window.innerWidth > 768 && sidebar) {
+            sidebar.classList.remove('active');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) overlay.remove();
+        }
+    });
+}
 
 //EDIT MEMBERSHIP MODAL JS
 // Initialize searchable select for member field

@@ -11,8 +11,6 @@ if (session_status() == PHP_SESSION_NONE) {
     <title>New You Fitness - Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/style/style.css">
-
-    <script src="assets/js/script.js" defer></script>
 </head>
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>
@@ -45,46 +43,46 @@ if (session_status() == PHP_SESSION_NONE) {
 
             <ul class="sidebar-nav">
                 <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
+                    <a href="dashboard.php" data-tooltip="Dashboard" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
                         <i class="bi bi-house-door"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="members.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'members.php' ? 'active' : ''; ?>">
+                    <a href="members.php" data-tooltip="Members" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'members.php' ? 'active' : ''; ?>">
                         <i class="bi bi-people"></i>
                         <span>Members</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="memberships.php" 
+                    <a href="memberships.php" data-tooltip="Memberships"
                     class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'memberships.php' ? 'active' : ''; ?>">
                         <i class="bi bi-card-checklist"></i>
                         <span>Memberships</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="payments.php"
+                    <a href="payments.php" data-tooltip="Payments"
                     class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : ''; ?>">
                         <i class="bi bi-credit-card"></i>
                         <span>Payments</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="plans.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
+                    <a href="plans.php" data-tooltip="Plans" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
                         <i class="bi bi-tag"></i>
                         <span>Manage Plans</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="staff.php" 
+                    <a href="staff.php" data-tooltip="Staff"
                     class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; ?>">
                         <i class="bi bi-person-badge"></i>
                         <span>Staff</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="settings.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
+                    <a href="settings.php" data-tooltip="Settings" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
                         <i class="bi bi-gear"></i>
                         <span>Settings</span>
                     </a>
@@ -100,7 +98,7 @@ if (session_status() == PHP_SESSION_NONE) {
                 </label>
             </div>
 
-            <a href="logout.php" class="logout-btn">
+            <a href="#" onclick="logoutNow()" class="logout-btn" data-tooltip="Log Out">
                 <i class="bi bi-box-arrow-right"></i>
                 <span>Log Out</span>
             </a>

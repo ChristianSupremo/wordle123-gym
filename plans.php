@@ -161,10 +161,10 @@ $plans = $stmt->fetchAll();
                             </div>
                         </td>
                         <td>
-                            <span style="font-weight: 600; color: #1e293b;">
+                            <span class="plan-duration-text">
                                 <?= htmlspecialchars($p['Duration']) ?>
                             </span>
-                            <span style="color: #64748b; font-size: 13px;">
+                            <span class="plan-type-text">
                                 <?= strtolower($p['PlanType']) ?>
                             </span>
                         </td>
@@ -174,7 +174,7 @@ $plans = $stmt->fetchAll();
                             </strong>
                         </td>
                         <td>
-                            <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <div class="plan-description-text">
                                 <?= htmlspecialchars($p['Description']) ?>
                             </div>
                         </td>
