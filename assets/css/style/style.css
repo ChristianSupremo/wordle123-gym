@@ -3317,3 +3317,28 @@ body.dark-mode .btn-upload:hover {
 body.dark-mode .plan-type-text {
     color: #a0aec0;
 }
+
+/*payments info grid*/
+body.dark-mode .readonly-info-item {
+    background: rgba(255, 255, 255, 0.06);      /* Slightly raised panel */
+    border-color: rgba(255, 255, 255, 0.12);     /* Subtle border */
+    color: var(--text-light);                    /* Make text brighter */
+}
+
+body.dark-mode .info-item-modern label,
+body.dark-mode .readonly-info-item label {
+    color: var(--text-light-muted);              /* Softer label tone */
+}
+
+body.dark-mode .info-item-modern span,
+body.dark-mode .readonly-info-item span {
+    color: var(--text-light);                    /* Bright readable text */
+}
+
+body.dark-mode .readonly-value {
+    color: white; /* Brighter for readability */
+}
+
+body.dark-mode .readonly-info-item label {
+    color: #a0aec0;
+}
