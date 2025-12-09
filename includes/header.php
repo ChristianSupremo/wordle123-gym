@@ -11,6 +11,8 @@ if (session_status() == PHP_SESSION_NONE) {
     <title>New You Fitness - Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/style/style.css">
+    <link rel="stylesheet" href="assets/css/style/filter_styles.css">
+    <link rel="stylesheet" href="assets/css/style/table_sort.css">
 </head>
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>
@@ -79,12 +81,6 @@ if (session_status() == PHP_SESSION_NONE) {
                     class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; ?>">
                         <i class="bi bi-person-badge"></i>
                         <span>Staff</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="settings.php" data-tooltip="Settings" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-gear"></i>
-                        <span>Settings</span>
                     </a>
                 </li>
             </ul>

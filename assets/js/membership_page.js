@@ -1,8 +1,3 @@
-// Toggle filter dropdown
-function toggleFilter() {
-    document.getElementById('filterDropdown').classList.toggle('show');
-}
-
 // Close dropdown when clicking outside
 document.addEventListener('click', function(event) {
     const filterBtn = document.querySelector('.filter-btn');

@@ -1,6 +1,7 @@
 <?php
 require_once 'config/db.php';
 require_once 'includes/functions.php';
+require_once 'includes/helpers/table_sort_helper.php';
 check_login();
 
 $action = $_GET['action'] ?? 'list';
@@ -108,9 +109,13 @@ $members = $pdo->query("SELECT MemberID, FirstName, LastName FROM Member ORDER B
 $plans = $pdo->query("SELECT PlanID, PlanName, Rate FROM Plan WHERE IsActive = 1")->fetchAll();
 
 if ($action === 'list') {
-    // Default filter: ALL
+    // Get filter and search parameters
     $status_filter = $_GET['status_filter'] ?? 'All';
     $search = trim($_GET['search'] ?? '');
+    
+    // Get sorting parameters
+    $sort_params = get_sort_params();
+    $sort_config = get_memberships_sort_config();
 
     $sql = "
         SELECT m.MembershipID,
@@ -132,34 +137,54 @@ if ($action === 'list') {
 
     $params = [];
 
+    // Apply status filter
     if ($status_filter !== 'All') {
         $sql .= " AND m.Status = ?";
         $params[] = $status_filter;
     }
 
+    // Apply search filter
     if ($search !== '') {
         $sql .= " AND (mem.FirstName LIKE ?
                        OR mem.LastName LIKE ?
-                       OR CONCAT(mem.FirstName, ' ', mem.LastName) LIKE ?)";
+                       OR CONCAT(mem.FirstName, ' ', mem.LastName) LIKE ?
+                       OR p.PlanName LIKE ?)";
         $like = '%' . $search . '%';
+        $params[] = $like;
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
     }
 
-    //New sort: Status (Active→Expired→Cancelled), then LastName, FirstName
-    $sql .= " 
-        ORDER BY 
-            CASE m.Status
-                WHEN 'Active' THEN 1
-                WHEN 'Pending' THEN 2
-                WHEN 'Expired' THEN 3
-                WHEN 'Cancelled' THEN 4
-                ELSE 5
-            END,
-            mem.LastName,
-            mem.FirstName
-    ";
+    // Apply sorting
+    $allowed_columns = ['MembershipID', 'MemberName', 'PlanName', 'StartDate', 'EndDate', 'DaysLeft'];
+    $sort_column = $sort_params['column'] ?? null;
+    $sort_order = $sort_params['order'] ?? 'ASC';
+    
+    if (!empty($sort_column) && in_array($sort_column, $allowed_columns)) {
+        $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
+        
+        // Map MemberName to the concatenated column for sorting
+        if ($sort_column === 'MemberName') {
+            $sql .= " ORDER BY CONCAT(mem.FirstName, ' ', mem.LastName) $sort_order";
+        } else {
+            $sql .= " ORDER BY $sort_column $sort_order";
+        }
+    } else {
+        // Default sort: Status (Active→Pending→Expired→Cancelled), then LastName, FirstName
+        $sql .= " 
+            ORDER BY 
+                CASE m.Status
+                    WHEN 'Active' THEN 1
+                    WHEN 'Pending' THEN 2
+                    WHEN 'Expired' THEN 3
+                    WHEN 'Cancelled' THEN 4
+                    ELSE 5
+                END,
+                mem.LastName,
+                mem.FirstName
+        ";
+    }
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -172,7 +197,20 @@ if ($action === 'list') {
 <?php if ($action === 'list'): ?>
 
 <div class="page-header">
-    <h1 class="page-title">Memberships</h1>
+    <h1 class="page-title">
+        Memberships
+        <?php 
+        // Display sort indicator
+        if (!empty($sort_params['column'])) {
+            echo get_sort_indicator(
+                $sort_params['column'], 
+                $sort_params['order'], 
+                $sort_config['column_labels']
+            );
+        }
+        ?>
+    </h1>
+    <?php echo render_clear_sort_button(); ?>
 </div>
 
 <!-- Search, Filter, Add -->
@@ -180,17 +218,33 @@ if ($action === 'list') {
     <div class="search-filter-group">
         <div class="search-box">
             <i class="bi bi-search"></i>
-            <input type="text" placeholder="Search membership..." id="membershipsearchInput" value="<?= htmlspecialchars($search) ?>">
+            <input type="text" 
+                   placeholder="Search membership..." 
+                   id="globalSearchInput"
+                   data-page="memberships.php"
+                   data-param="search"
+                   value="<?= htmlspecialchars($search) ?>">
         </div>
 
         <div class="filter-dropdown">
-            <button class="filter-btn" onclick="toggleFilter()">
+            <button class="filter-btn" onclick="toggleFilter('memberships')">
                 <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
             </button>
 
-            <div class="filter-dropdown-content" id="filterDropdown">
+            <div class="filter-dropdown-content" id="filterDropdown_memberships">
                 <form method="GET" action="memberships.php">
                     <input type="hidden" name="action" value="list">
+                    
+                    <!-- Preserve sort parameters -->
+                    <?php if (!empty($sort_params['column'])): ?>
+                        <input type="hidden" name="sort_by" value="<?= htmlspecialchars($sort_params['column']) ?>">
+                        <input type="hidden" name="sort_order" value="<?= htmlspecialchars($sort_params['order']) ?>">
+                    <?php endif; ?>
+                    
+                    <!-- Preserve search parameter -->
+                    <?php if (!empty($search)): ?>
+                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                    <?php endif; ?>
 
                     <div class="filter-option">
                         <input type="radio" name="status_filter" value="All" id="filterAll"
@@ -236,11 +290,14 @@ if ($action === 'list') {
     <table class="members-table">
         <thead>
             <tr>
-                <th>Member</th>
-                <th>Plan</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Days Left</th>
+                <?php
+                // Render sortable headers
+                echo render_sortable_header('Member', 'MemberName', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Plan', 'PlanName', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Start Date', 'StartDate', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('End Date', 'EndDate', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Days Left', 'DaysLeft', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                ?>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -316,7 +373,7 @@ if ($action === 'list') {
     <!-- Pagination -->
     <div class="pagination-container">
         <div class="pagination-info">
-            Showing 1 to <?= count($memberships) ?> of <?= count($memberships) ?> results
+            Showing <?= count($memberships) ?> results
         </div>
         <div class="pagination">
             <button class="pagination-btn" disabled><i class="bi bi-chevron-left"></i></button>
@@ -326,7 +383,6 @@ if ($action === 'list') {
 </div>
 
 <script>
-
 // Open add membership modal - now uses modal instead of redirect
 function openAddMembershipModal() {
     openAddMembershipModal();

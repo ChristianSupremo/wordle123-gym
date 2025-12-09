@@ -2,10 +2,11 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/payment_modal_helpers.php';
+require_once 'includes/helpers/table_sort_helper.php'; // Add this line
 check_login();
 
-$action = $_GET['action'] ?? 'list';
-$payment_id = $_GET['id'] ?? null;
+ $action = $_GET['action'] ?? 'list';
+ $payment_id = $_GET['id'] ?? null;
 
 // --- Handle Form Submissions ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -46,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if ($action === 'list') {
     $status_filter = $_GET['status_filter'] ?? 'All';
     $search = trim($_GET['search'] ?? '');
+    
+    // Get sorting parameters
+    $sort_config = get_payments_sort_config();
+    $sort_params = get_sort_params($sort_config);
 
     $sql = "
         SELECT 
@@ -83,7 +88,6 @@ if ($action === 'list') {
         WHERE 1=1
     ";
 
-
     $params = [];
 
     if ($status_filter !== 'All') {
@@ -107,10 +111,15 @@ if ($action === 'list') {
         $params[] = $like;
     }
 
-    $sql .= " ORDER BY 
-              CASE WHEN p.PaymentDate IS NULL THEN 1 ELSE 0 END,
-              p.PaymentDate DESC,
-              m.StartDate DESC";
+    // Add sorting
+    if (!empty($sort_params['column'])) {
+        $sql .= " ORDER BY " . $sort_params['column'] . " " . $sort_params['order'];
+    } else {
+        $sql .= " ORDER BY 
+                  CASE WHEN p.PaymentDate IS NULL THEN 1 ELSE 0 END,
+                  p.PaymentDate DESC,
+                  m.StartDate DESC";
+    }
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -118,8 +127,8 @@ if ($action === 'list') {
 }
 
 // Fetch active memberships and payment methods for modals
-$active_memberships = getActiveMemberships($pdo);
-$payment_methods = getPaymentMethods($pdo);
+ $active_memberships = getActiveMemberships($pdo);
+ $payment_methods = getPaymentMethods($pdo);
 
 ?>
 
@@ -131,7 +140,20 @@ $payment_methods = getPaymentMethods($pdo);
 <?php if ($action === 'list'): ?>
 
 <div class="page-header">
-    <h1 class="page-title">Payment History</h1>
+    <h1 class="page-title">
+        Payment History
+        <?php 
+        // Display sort indicator
+        if (!empty($sort_params['column'])) {
+            echo get_sort_indicator(
+                $sort_params['column'], 
+                $sort_params['order'], 
+                $sort_config['column_labels']
+            );
+        }
+        ?>
+    </h1>
+    <?php echo render_clear_sort_button(); ?>
 </div>
 
 <!-- Search, Filter, Add -->
@@ -139,17 +161,35 @@ $payment_methods = getPaymentMethods($pdo);
     <div class="search-filter-group">
         <div class="search-box">
             <i class="bi bi-search"></i>
-            <input type="text" placeholder="Search member or reference..." id="searchInput" value="<?= htmlspecialchars($search) ?>">
+            <input 
+                type="text" 
+                placeholder="Search member or reference..." 
+                id="globalSearchInput"
+                data-page="payments.php"
+                data-param="search"
+                value="<?= htmlspecialchars($search) ?>"
+            >
         </div>
 
         <div class="filter-dropdown">
-            <button class="filter-btn" onclick="toggleFilter()">
+            <button class="filter-btn" onclick="toggleFilter('payments')">
                 <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
             </button>
 
-            <div class="filter-dropdown-content" id="filterDropdown">
+            <div class="filter-dropdown-content" id="filterDropdown_payments">
                 <form method="GET" action="payments.php">
                     <input type="hidden" name="action" value="list">
+                    
+                    <!-- Preserve sort parameters -->
+                    <?php if (!empty($sort_params['column'])): ?>
+                        <input type="hidden" name="sort_by" value="<?= htmlspecialchars($sort_params['column']) ?>">
+                        <input type="hidden" name="sort_order" value="<?= htmlspecialchars($sort_params['order']) ?>">
+                    <?php endif; ?>
+                    
+                    <!-- Preserve search parameter -->
+                    <?php if (!empty($search)): ?>
+                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                    <?php endif; ?>
 
                     <div class="filter-option">
                         <input type="radio" name="status_filter" value="All" id="filterAll"
@@ -195,11 +235,16 @@ $payment_methods = getPaymentMethods($pdo);
     <table class="members-table">
         <thead>
             <tr>
-                <th>Payment Date</th>
-                <th>Member Name</th>
+                <?php
+                // Render sortable headers
+                echo render_sortable_header('Payment Date', 'PaymentDate', $sort_params['column'], $sort_params['order'], 'payments.php');
+                echo render_sortable_header('Member Name', 'MemberName', $sort_params['column'], $sort_params['order'], 'payments.php');
+                ?>
                 <th>Plan</th>
-                <th>Payment Method</th>
-                <th>Amount Paid</th>
+                <?php
+                echo render_sortable_header('Payment Method', 'PaymentMethod', $sort_params['column'], $sort_params['order'], 'payments.php');
+                echo render_sortable_header('Amount Paid', 'Amount', $sort_params['column'], $sort_params['order'], 'payments.php');
+                ?>
                 <th>Reference #</th>
                 <th>Status</th>
                 <th>Staff</th>
@@ -293,24 +338,24 @@ $payment_methods = getPaymentMethods($pdo);
 
 <script>
 // Toggle filter dropdown
-function toggleFilter() {
-    document.getElementById('filterDropdown').classList.toggle('show');
+function toggleFilter(type) {
+    document.getElementById('filterDropdown_' + type).classList.toggle('show');
 }
 
 // Close dropdown when clicking outside
 document.addEventListener('click', function(event) {
-    const filterBtn = document.querySelector('.filter-btn');
-    const dropdown = document.getElementById('filterDropdown');
-    if (!filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.classList.remove('show');
-    }
-});
-
-// Search on Enter
-document.getElementById('searchInput').addEventListener('keyup', function(e) {
-    if (e.key === 'Enter') {
-        window.location.href = 'payments.php?action=list&search=' + encodeURIComponent(this.value);
-    }
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const dropdowns = document.querySelectorAll('.filter-dropdown-content');
+    
+    filterBtns.forEach(btn => {
+        if (!btn.contains(event.target)) {
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+    });
 });
 </script>
 

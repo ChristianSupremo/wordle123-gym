@@ -7,10 +7,38 @@ check_login();
 $stmt = $pdo->query("SELECT COUNT(*) as total_members FROM Member");
 $total_members = $stmt->fetch()['total_members'];
 
-$stmt = $pdo->query("SELECT COUNT(*) as active_members FROM Member WHERE MembershipStatus = 'Active'");
+// Active members - count members whose current/latest membership is Active
+$stmt = $pdo->query("
+    SELECT COUNT(DISTINCT m.MemberID) as active_members
+    FROM Member m
+    INNER JOIN Membership ms ON m.MemberID = ms.MemberID
+    WHERE ms.MembershipID = (
+        SELECT MembershipID 
+        FROM Membership 
+        WHERE MemberID = m.MemberID 
+        ORDER BY EndDate DESC 
+        LIMIT 1
+    )
+    AND ms.Status = 'Active'
+    AND ms.EndDate >= CURDATE()
+");
 $active_members = $stmt->fetch()['active_members'];
 
-$stmt = $pdo->query("SELECT COUNT(*) as expired_members FROM Member WHERE MembershipStatus = 'Expired'");
+// Expired members - count members whose current/latest membership is Expired
+$stmt = $pdo->query("
+    SELECT COUNT(DISTINCT m.MemberID) as expired_members
+    FROM Member m
+    INNER JOIN Membership ms ON m.MemberID = ms.MemberID
+    WHERE ms.MembershipID = (
+        SELECT MembershipID 
+        FROM Membership 
+        WHERE MemberID = m.MemberID 
+        ORDER BY EndDate DESC 
+        LIMIT 1
+    )
+    AND ms.Status = 'Expired'
+    AND ms.EndDate < CURDATE()
+");
 $expired_members = $stmt->fetch()['expired_members'];
 
 // Monthly Revenue (Current Month)
@@ -22,6 +50,27 @@ $stmt = $pdo->query("
       AND PaymentStatus = 'Completed'
 ");
 $total_revenue = $stmt->fetch()['monthly_revenue'] ?? 0;
+
+// Members per plan (for pie chart)
+$stmt = $pdo->query("
+    SELECT 
+        p.PlanName,
+        COUNT(DISTINCT m.MemberID) as member_count
+    FROM Member m
+    INNER JOIN Membership ms ON m.MemberID = ms.MemberID
+    INNER JOIN Plan p ON ms.PlanID = p.PlanID
+    WHERE ms.MembershipID = (
+        SELECT MembershipID 
+        FROM Membership 
+        WHERE MemberID = m.MemberID 
+        ORDER BY EndDate DESC 
+        LIMIT 1
+    )
+    AND ms.Status = 'Active'
+    GROUP BY p.PlanID, p.PlanName
+    ORDER BY member_count DESC
+");
+$members_per_plan = $stmt->fetchAll();
 
 // New members this month
 $stmt = $pdo->query("
@@ -122,6 +171,35 @@ $upcoming_expirations = $stmt->fetchAll();
         </table>
     </div>
 
+    <!-- Members per Plan - Pie Chart -->
+    <div class="dashboard-card">
+        <div class="card-header-flex">
+            <h2 class="card-title">Members per Plan</h2>
+        </div>
+        
+        <div class="chart-container">
+            <?php if (count($members_per_plan) > 0): ?>
+                <canvas id="membersPerPlanChart"></canvas>
+                
+                <!-- Legend -->
+                <div class="chart-legend" id="chartLegend">
+                    <?php foreach ($members_per_plan as $index => $plan): ?>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: <?php 
+                                $colors = ['#4fd1c5', '#63b3ed', '#f6ad55', '#fc8181', '#9f7aea', '#48bb78'];
+                                echo $colors[$index % count($colors)];
+                            ?>;"></span>
+                            <span class="legend-label"><?php echo htmlspecialchars($plan['PlanName']); ?></span>
+                            <span class="legend-value"><?php echo $plan['member_count']; ?> members</span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p style="text-align: center; color: #718096; padding: 40px 0;">No active memberships</p>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Upcoming Expirations -->
     <div class="dashboard-card">
         <div class="card-header-flex">
@@ -148,5 +226,68 @@ $upcoming_expirations = $stmt->fetchAll();
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Members per Plan Pie Chart
+<?php if (count($members_per_plan) > 0): ?>
+const ctx = document.getElementById('membersPerPlanChart');
+
+const data = {
+    labels: <?php echo json_encode(array_column($members_per_plan, 'PlanName')); ?>,
+    datasets: [{
+        data: <?php echo json_encode(array_column($members_per_plan, 'member_count')); ?>,
+        backgroundColor: [
+            '#4fd1c5',
+            '#63b3ed',
+            '#f6ad55',
+            '#fc8181',
+            '#9f7aea',
+            '#48bb78'
+        ],
+        borderColor: '#ffffff',
+        borderWidth: 3,
+        hoverOffset: 10
+    }]
+};
+
+const config = {
+    type: 'doughnut',
+    data: data,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: '#2d3748',
+                padding: 12,
+                titleFont: {
+                    size: 14,
+                    weight: 'bold'
+                },
+                bodyFont: {
+                    size: 13
+                },
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${label}: ${value} members (${percentage}%)`;
+                    }
+                }
+            }
+        },
+        cutout: '65%'
+    }
+};
+
+new Chart(ctx, config);
+<?php endif; ?>
+</script>
 
 <?php include 'includes/footer.php'; ?>

@@ -52,6 +52,27 @@
     color: #94a3b8;
 }
 
+.dark-mode .membership-option-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.dark-mode .membership-option-details .plan-name {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.dark-mode .membership-option-dates {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.dark-mode .membership-option-header {
+    color: #e2e8f0; /* Dark mode: slate-200 */
+}
+
 /* Read-Only Information Grid */
 .readonly-info-grid {
     display: grid;

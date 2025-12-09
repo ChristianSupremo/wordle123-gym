@@ -1,0 +1,189 @@
+/* ====================================
+   TABLE SORTING STYLES
+   Dark Mode Friendly
+   ==================================== */
+
+/* Sortable column headers */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 28px !important;
+    transition: background-color 0.2s;
+}
+
+th.sortable:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Sort indicator container */
+th.sortable::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    opacity: 0.3;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 3L12 7H4z'/%3E%3Cpath d='M8 13L4 9h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: opacity 0.2s;
+}
+
+th.sortable:hover::after {
+    opacity: 0.6;
+}
+
+/* Active sort - Ascending */
+th.sortable.sorted.asc::after {
+    opacity: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%233b82f6' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 3l4 4H4z'/%3E%3C/svg%3E");
+}
+
+/* Active sort - Descending */
+th.sortable.sorted.desc::after {
+    opacity: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%233b82f6' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 13l-4-4h8z'/%3E%3C/svg%3E");
+}
+
+/* Sorted column highlight */
+th.sortable.sorted {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+/* Sort tooltip (optional) */
+th.sortable[data-sort-hint]::before {
+    content: attr(data-sort-hint);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 1000;
+    border: 1px solid #334155;
+}
+
+th.sortable:hover[data-sort-hint]::before {
+    opacity: 1;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    th.sortable {
+        padding-right: 24px !important;
+    }
+    
+    th.sortable::after {
+        width: 12px;
+        height: 12px;
+        right: 6px;
+    }
+}
+
+/* Clear sort button */
+.sort-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 12px;
+}
+
+.sort-clear-btn:hover {
+    background: #475569;
+    border-color: #64748b;
+}
+
+.sort-clear-btn i {
+    font-size: 11px;
+}
+
+/* Sort indicator badge in page header */
+.sort-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 12px;
+    font-weight: 400;
+}
+
+.sort-indicator i {
+    font-size: 11px;
+}
+
+/* Page header adjustments for sort elements */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+}
+
+/* Light mode support (if needed) */
+@media (prefers-color-scheme: light) {
+    body:not(.dark-mode) th.sortable::after {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M8 3L12 7H4z'/%3E%3Cpath d='M8 13L4 9h8z'/%3E%3C/svg%3E");
+    }
+    
+    body:not(.dark-mode) th.sortable.sorted.asc::after {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%233b82f6' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 3l4 4H4z'/%3E%3C/svg%3E");
+    }
+    
+    body:not(.dark-mode) th.sortable.sorted.desc::after {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%233b82f6' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 13l-4-4h8z'/%3E%3C/svg%3E");
+    }
+    
+    body:not(.dark-mode) th.sortable:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    body:not(.dark-mode) th.sortable[data-sort-hint]::before {
+        background: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+    }
+    
+    body:not(.dark-mode) .sort-clear-btn {
+        background: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+    }
+    
+    body:not(.dark-mode) .sort-clear-btn:hover {
+        background: #e2e8f0;
+        border-color: #94a3b8;
+    }
+}

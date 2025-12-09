@@ -30,12 +30,20 @@ function flash_message() {
     return '';
 }
 
-function get_members($pdo, $status_filter = 'All', $search = '') {
+
+/**
+ * Updated includes/functions.php
+ * Added sorting support to get_members() function
+ */
+
+function get_members($pdo, $status_filter = 'All', $search = '', $sort_params = []) {
+    // Base query with FullName for sorting
     $sql = "
         SELECT 
             MemberID,
             FirstName,
             LastName,
+            CONCAT(FirstName, ' ', LastName) as FullName,
             PhoneNo,
             JoinDate,
             MembershipStatus
@@ -59,20 +67,40 @@ function get_members($pdo, $status_filter = 'All', $search = '') {
                 OR LastName LIKE ? 
                 OR CONCAT(FirstName, ' ', LastName) LIKE ?
                 OR PhoneNo LIKE ?
+                OR MemberID LIKE ?
             )
         ";
         $like = '%' . $search . '%';
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
-        $params[] = $like; // allows searching by phone number
+        $params[] = $like;
+        $params[] = $like;
     }
 
-    $sql .= " ORDER BY LastName, FirstName";
+    // Apply sorting
+    $allowed_columns = ['MemberID', 'FullName', 'PhoneNo', 'JoinDate'];
+    $sort_column = $sort_params['column'] ?? null;
+    $sort_order = $sort_params['order'] ?? 'ASC';
+    
+    // Validate and apply sorting
+    if (!empty($sort_column) && in_array($sort_column, $allowed_columns)) {
+        // Ensure sort order is valid
+        $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
+        
+        // Map FullName to the concatenated column for sorting
+        if ($sort_column === 'FullName') {
+            $sql .= " ORDER BY CONCAT(FirstName, ' ', LastName) $sort_order";
+        } else {
+            $sql .= " ORDER BY $sort_column $sort_order";
+        }
+    } else {
+        // Default sorting (when no sort is applied or after third click)
+        $sql .= " ORDER BY JoinDate DESC";
+    }
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 ?>

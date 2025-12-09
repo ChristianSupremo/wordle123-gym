@@ -193,12 +193,22 @@
 
                         <!-- Permissions Tab -->
                         <div class="tab-pane-modern" id="permissions-tab">
-                            <div style="background: #f7fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                                <h4 style="font-size: 16px; font-weight: 600; color: #2d3748; margin: 0 0 16px 0;">
-                                    <i class="bi bi-shield-check"></i> Role Permissions
+                            <div class="permissions-container">
+                                <h4 class="permissions-header">
+                                    <i class="bi bi-shield-check"></i> 
+                                    Role Permissions
                                 </h4>
-                                <ul id="view_permissions_list" style="list-style: none; padding: 0; margin: 0;">
+                                <ul id="view_permissions_list" class="permissions-list">
                                     <!-- Permissions will be populated here -->
+                                    <!-- Example structure: -->
+                                    <!-- <li>
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        Can manage members
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-x-circle-fill"></i>
+                                        Cannot access financial reports
+                                    </li> -->
                                 </ul>
                             </div>
                         </div>
