@@ -21,7 +21,7 @@ if ($action === 'list') {
     $search = trim($_GET['search'] ?? '');
     
     // Get sorting parameters
-    $sort_config = get_payments_sort_config();
+    $sort_config = get_members_sort_config();
     $sort_params = get_sort_params($sort_config);
     
     $members = get_members($pdo, $status_filter, $search, $sort_params);
@@ -37,9 +37,9 @@ include 'includes/header.php';
         Members
         <?php 
         // Display sort indicator
-        if (!empty($sort_params['column'])) {
+        if (!empty($sort_params['original'])) {
             echo get_sort_indicator(
-                $sort_params['column'], 
+                $sort_params['original'], 
                 $sort_params['order'], 
                 $sort_config['column_labels']
             );
@@ -136,9 +136,9 @@ include 'includes/header.php';
             <tr>
                 <?php
                 // Render sortable headers
-                echo render_sortable_header('Member ID', 'MemberID', $sort_params['column'], $sort_params['order'], 'members.php');
-                echo render_sortable_header('Full Name', 'FullName', $sort_params['column'], $sort_params['order'], 'members.php');
-                echo render_sortable_header('Contact Number', 'PhoneNo', $sort_params['column'], $sort_params['order'], 'members.php');
+                echo render_sortable_header('Member ID', 'MemberID', $sort_params['original'], $sort_params['order'], 'members.php');
+                echo render_sortable_header('Full Name', 'FullName', $sort_params['original'], $sort_params['order'], 'members.php');
+                echo render_sortable_header('Contact Number', 'PhoneNo', $sort_params['original'], $sort_params['order'], 'members.php');       
                 ?>
                 <th>Status</th>
                 <?php

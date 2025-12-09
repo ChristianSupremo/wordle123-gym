@@ -114,8 +114,8 @@ if ($action === 'list') {
     $search = trim($_GET['search'] ?? '');
     
     // Get sorting parameters
-    $sort_params = get_sort_params();
     $sort_config = get_memberships_sort_config();
+    $sort_params = get_sort_params($sort_config);
 
     $sql = "
         SELECT m.MembershipID,
@@ -159,13 +159,14 @@ if ($action === 'list') {
     // Apply sorting
     $allowed_columns = ['MembershipID', 'MemberName', 'PlanName', 'StartDate', 'EndDate', 'DaysLeft'];
     $sort_column = $sort_params['column'] ?? null;
+    $sort_original = $sort_params['original'] ?? null;
     $sort_order = $sort_params['order'] ?? 'ASC';
-    
-    if (!empty($sort_column) && in_array($sort_column, $allowed_columns)) {
+
+    if (!empty($sort_column) && !empty($sort_original)) {
         $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
         
         // Map MemberName to the concatenated column for sorting
-        if ($sort_column === 'MemberName') {
+        if ($sort_original === 'MemberName') {
             $sql .= " ORDER BY CONCAT(mem.FirstName, ' ', mem.LastName) $sort_order";
         } else {
             $sql .= " ORDER BY $sort_column $sort_order";
@@ -201,9 +202,9 @@ if ($action === 'list') {
         Memberships
         <?php 
         // Display sort indicator
-        if (!empty($sort_params['column'])) {
+        if (!empty($sort_params['original'])) {
             echo get_sort_indicator(
-                $sort_params['column'], 
+                $sort_params['original'],  // Changed from 'column'
                 $sort_params['order'], 
                 $sort_config['column_labels']
             );
@@ -236,8 +237,8 @@ if ($action === 'list') {
                     <input type="hidden" name="action" value="list">
                     
                     <!-- Preserve sort parameters -->
-                    <?php if (!empty($sort_params['column'])): ?>
-                        <input type="hidden" name="sort_by" value="<?= htmlspecialchars($sort_params['column']) ?>">
+                    <?php if (!empty($sort_params['original'])): ?>
+                        <input type="hidden" name="sort_by" value="<?= htmlspecialchars($sort_params['original']) ?>">
                         <input type="hidden" name="sort_order" value="<?= htmlspecialchars($sort_params['order']) ?>">
                     <?php endif; ?>
                     
@@ -292,11 +293,11 @@ if ($action === 'list') {
             <tr>
                 <?php
                 // Render sortable headers
-                echo render_sortable_header('Member', 'MemberName', $sort_params['column'], $sort_params['order'], 'memberships.php');
-                echo render_sortable_header('Plan', 'PlanName', $sort_params['column'], $sort_params['order'], 'memberships.php');
-                echo render_sortable_header('Start Date', 'StartDate', $sort_params['column'], $sort_params['order'], 'memberships.php');
-                echo render_sortable_header('End Date', 'EndDate', $sort_params['column'], $sort_params['order'], 'memberships.php');
-                echo render_sortable_header('Days Left', 'DaysLeft', $sort_params['column'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Member', 'MemberName', $sort_params['original'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Plan', 'PlanName', $sort_params['original'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Start Date', 'StartDate', $sort_params['original'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('End Date', 'EndDate', $sort_params['original'], $sort_params['order'], 'memberships.php');
+                echo render_sortable_header('Days Left', 'DaysLeft', $sort_params['original'], $sort_params['order'], 'memberships.php');
                 ?>
                 <th>Status</th>
                 <th>Action</th>

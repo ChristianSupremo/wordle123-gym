@@ -5,11 +5,6 @@
  */
 
 /**
- * Get sorting parameters from URL
- * 
- * @return array ['column' => string, 'order' => string]
- */
-/**
  * Get sort parameters and validate against allowed columns
  */
 function get_sort_params($config = null) {
@@ -22,39 +17,24 @@ function get_sort_params($config = null) {
         $sort_order = 'ASC';
     }
     
+    $mapped_column = null;
+    
     // If config provided, validate and map column
     if ($config && $sort_by) {
-        if (!in_array($sort_by, $config['allowed_columns'])) {
+        if (in_array($sort_by, $config['allowed_columns'])) {
+            // Column is valid, map it if mapping exists
+            $mapped_column = $config['column_mapping'][$sort_by] ?? $sort_by;
+        } else {
+            // Invalid column, set both to null
             $sort_by = null;
-        } elseif (isset($config['column_mapping'][$sort_by])) {
-            $sort_by = $config['column_mapping'][$sort_by];
         }
     }
     
     return [
-        'column' => $sort_by,
+        'column' => $mapped_column,      // Mapped column for SQL
+        'original' => $sort_by,          // Original parameter for HTML
         'order' => $sort_order
     ];
-}
-
-/**
- * Build ORDER BY clause for SQL query
- * 
- * @param string|null $sort_column - Column to sort by
- * @param string $sort_order - Sort order (ASC/DESC)
- * @param array $allowed_columns - Whitelist of allowed sort columns
- * @param string $default_order - Default ORDER BY clause
- * @return string SQL ORDER BY clause
- */
-function build_order_by($sort_column, $sort_order, $allowed_columns, $default_order = '') {
-    // If no sort column or invalid column, return default
-    if (empty($sort_column) || !in_array($sort_column, $allowed_columns)) {
-        return $default_order ? "ORDER BY $default_order" : '';
-    }
-    
-    // Sanitize and build ORDER BY
-    $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
-    return "ORDER BY $sort_column $sort_order";
 }
 
 /**
@@ -62,7 +42,7 @@ function build_order_by($sort_column, $sort_order, $allowed_columns, $default_or
  * 
  * @param string $label - Column label to display
  * @param string $column - Database column name
- * @param string $current_sort_by - Currently sorted column
+ * @param string $current_sort_by - Currently sorted column (original, not mapped)
  * @param string $current_sort_order - Current sort order
  * @param string $page - Page name (for JS)
  * @return string HTML for sortable header
@@ -96,7 +76,7 @@ function render_sortable_header($label, $column, $current_sort_by = null, $curre
 /**
  * Get sort indicator HTML (for page header display)
  * 
- * @param string|null $sort_column - Currently sorted column
+ * @param string|null $sort_column - Currently sorted column (original, not mapped)
  * @param string|null $sort_order - Current sort order
  * @param array $column_labels - Map of column names to display labels
  * @return string HTML for sort indicator
@@ -124,9 +104,9 @@ function get_sort_indicator($sort_column, $sort_order, $column_labels = []) {
  * @return string HTML for clear sort button
  */
 function render_clear_sort_button() {
-    $sort_params = get_sort_params();
+    $sort_by = $_GET['sort_by'] ?? null;
     
-    if (empty($sort_params['column'])) {
+    if (empty($sort_by)) {
         return '';
     }
     
@@ -134,27 +114,34 @@ function render_clear_sort_button() {
 }
 
 /**
- * Build complete SQL query with sorting
- * 
- * @param string $base_query - Base SQL query without ORDER BY
- * @param array $allowed_columns - Whitelist of allowed sort columns
- * @param string $default_order - Default ORDER BY clause
- * @return string Complete SQL query
+ * Members-specific sorting configuration
  */
-function build_sorted_query($base_query, $allowed_columns, $default_order = '') {
-    $sort_params = get_sort_params();
-    $order_by = build_order_by(
-        $sort_params['column'],
-        $sort_params['order'],
-        $allowed_columns,
-        $default_order
-    );
-    
-    return trim($base_query . ' ' . $order_by);
+function get_members_sort_config() {
+    return [
+        'allowed_columns' => [
+            'MemberID',
+            'FullName',
+            'PhoneNo',
+            'JoinDate'
+        ],
+        'column_mapping' => [
+            'MemberID' => 'MemberID',
+            'FullName' => 'FullName',
+            'PhoneNo' => 'PhoneNo',
+            'JoinDate' => 'JoinDate'
+        ],
+        'column_labels' => [
+            'MemberID' => 'Member ID',
+            'FullName' => 'Full Name',
+            'PhoneNo' => 'Contact Number',
+            'JoinDate' => 'Join Date'
+        ],
+        'default_order' => 'JoinDate DESC'
+    ];
 }
 
 /**
- * Members-specific sorting configuration
+ * Memberships-specific sorting configuration
  */
 function get_memberships_sort_config() {
     return [
@@ -164,6 +151,7 @@ function get_memberships_sort_config() {
             'PlanName',
             'StartDate',
             'EndDate',
+            'DaysLeft',
             'Amount'
         ],
         'column_mapping' => [
@@ -172,6 +160,7 @@ function get_memberships_sort_config() {
             'PlanName' => 'pl.PlanName',
             'StartDate' => 'm.StartDate',
             'EndDate' => 'm.EndDate',
+            'DaysLeft' => 'DaysLeft',
             'Amount' => 'pl.Rate'
         ],
         'column_labels' => [
@@ -228,6 +217,13 @@ function get_staff_sort_config() {
             'Role',
             'DateHired'
         ],
+        'column_mapping' => [
+            'StaffID' => 'StaffID',
+            'FullName' => 'FullName',
+            'Email' => 'Email',
+            'Role' => 'Role',
+            'DateHired' => 'DateHired'
+        ],
         'column_labels' => [
             'StaffID' => 'Staff ID',
             'FullName' => 'Full Name',
@@ -249,6 +245,12 @@ function get_plans_sort_config() {
             'PlanName',
             'Duration',
             'Price'
+        ],
+        'column_mapping' => [
+            'PlanID' => 'PlanID',
+            'PlanName' => 'PlanName',
+            'Duration' => 'Duration',
+            'Price' => 'Price'
         ],
         'column_labels' => [
             'PlanID' => 'Plan ID',
