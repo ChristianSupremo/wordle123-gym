@@ -47,10 +47,11 @@ INSERT INTO `roles` (`RoleID`, `RoleName`, `Description`, `AccessLevel`, `IsDefa
 -- =====================================================
 -- Password for all: "password" (hashed with bcrypt)
 INSERT INTO `staff` (`StaffID`, `FirstName`, `LastName`, `Email`, `Phone`, `RoleID`, `Username`, `PasswordHash`, `HireDate`, `Status`, `LastLogin`, `CreatedAt`) VALUES
-(1, 'Sarah', 'Johnson', 'sarah.johnson@fitlife.com', '09175551001', 1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-01-15', 'Active', '2025-12-10 08:30:00', '2024-01-15 09:00:00'),
-(2, 'Michael', 'Chen', 'michael.chen@fitlife.com', '09175551002', 2, 'manager', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-02-01', 'Active', '2025-12-09 16:45:00', '2024-02-01 09:00:00'),
-(3, 'Maria', 'Santos', 'maria.santos@fitlife.com', '09175551003', 3, 'receptionist', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-03-10', 'Active', '2025-12-10 09:15:00', '2024-03-10 09:00:00'),
-(4, 'James', 'Rodriguez', 'james.rodriguez@fitlife.com', '09175551004', 3, 'jrodriguez', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-06-15', 'Active', '2025-12-08 14:30:00', '2024-06-15 09:00:00');
+(1, 'Christian', 'Supremo', 'christian.supremo@newyou.com', '09175551001', 1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-01-15', 'Active', '2025-12-10 08:30:00', '2024-01-15 09:00:00'),
+(2, 'Dean', 'Mata', 'dean.mata@newyou.com', '09175551002', 2, 'manager', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-02-01', 'Active', '2025-12-09 16:45:00', '2024-02-01 09:00:00'),
+(3, 'Shiori', 'Morisaka', 'shiori.morisaka@newyou.com', '09175551003', 3, 'receptionist', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-03-10', 'Active', '2025-12-10 09:15:00', '2024-03-10 09:00:00'),
+(4, 'Zyleika', 'Invento', 'zyleika.invento@newyou.com', '09175551004', 3, 'zyleikainvento', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-06-15', 'Active', '2025-12-08 14:30:00', '2024-06-15 09:00:00'),
+(5, 'Queenie', 'Sandoval', 'queenie.sandoval@newyou.com', '09175551005', 3, 'queeniesandoval', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '2024-06-15', 'Active', '2025-12-08 14:30:00', '2024-06-15 09:00:00');
 
 -- =====================================================
 -- 4. INSERT PAYMENT METHODS  (GCash + Cash ONLY)
@@ -264,8 +265,8 @@ INSERT INTO `agreement` (`AgreementID`, `MemberID`, `MembershipID`, `AgreementDa
 -- 10. UPDATE AUTO_INCREMENT VALUES
 -- =====================================================
 ALTER TABLE `roles` AUTO_INCREMENT = 4;
-ALTER TABLE `staff` AUTO_INCREMENT = 5;
-ALTER TABLE `paymentmethods` AUTO_INCREMENT = 4;
+ALTER TABLE `staff` AUTO_INCREMENT = 6;
+ALTER TABLE `paymentmethods` AUTO_INCREMENT = 3;
 ALTER TABLE `plan` AUTO_INCREMENT = 7;
 ALTER TABLE `member` AUTO_INCREMENT = 31;
 ALTER TABLE `membership` AUTO_INCREMENT = 41;
@@ -277,7 +278,7 @@ ALTER TABLE `agreement` AUTO_INCREMENT = 24;
 -- =====================================================
 -- 
 -- ROLES: 3 (Admin, Manager, Receptionist)
--- STAFF: 4 members with different roles
+-- STAFF: 5 members with different roles
 -- PAYMENT METHODS: 2 (Cash, GCash)
 -- PLANS: 6 active plans (15 days to 1 year)
 -- MEMBERS: 30 total
