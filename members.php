@@ -137,13 +137,11 @@ include 'includes/header.php';
                 <?php
                 // Render sortable headers
                 echo render_sortable_header('Member ID', 'MemberID', $sort_params['original'], $sort_params['order'], 'members.php');
+                echo render_sortable_header('Join Date&Time', 'JoinDate', $sort_params['original'], $sort_params['order'], 'members.php');
                 echo render_sortable_header('Full Name', 'FullName', $sort_params['original'], $sort_params['order'], 'members.php');
                 echo render_sortable_header('Contact Number', 'PhoneNo', $sort_params['original'], $sort_params['order'], 'members.php');       
                 ?>
                 <th>Status</th>
-                <?php
-                echo render_sortable_header('Join Date', 'JoinDate', $sort_params['column'], $sort_params['order'], 'members.php');
-                ?>
                 <th>Action</th>
             </tr>
         </thead>
@@ -154,6 +152,13 @@ include 'includes/header.php';
                 <tr>
                     <td><?= htmlspecialchars($m['MemberID']) ?></td>
 
+                    <td>
+                        <div class="date-cell">
+                            <span class="date-main"><?= $m['createdAt'] ? date('M d, Y', strtotime($m['createdAt'])) : 'N/A' ?></span>
+                            <span class="date-time"><?= $m['createdAt'] ? date('g:i A', strtotime($m['createdAt'])) : '' ?></span>
+                        </div>
+                    </td>
+
                     <td><?= htmlspecialchars($m['FirstName'] . ' ' . $m['LastName']) ?></td>
 
                     <td><?= htmlspecialchars($m['PhoneNo'] ?? 'N/A') ?></td>
@@ -163,8 +168,6 @@ include 'includes/header.php';
                             <?= htmlspecialchars($m['MembershipStatus']) ?>
                         </span>
                     </td>
-
-                    <td><?= $m['JoinDate'] ? date('m/d/y', strtotime($m['JoinDate'])) : 'N/A' ?></td>
 
                     <td>
                         <div class="action-buttons">

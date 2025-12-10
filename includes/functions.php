@@ -46,6 +46,7 @@ function get_members($pdo, $status_filter = 'All', $search = '', $sort_params = 
             CONCAT(FirstName, ' ', LastName) as FullName,
             PhoneNo,
             JoinDate,
+            createdAt,
             MembershipStatus
         FROM member
         WHERE 1=1
@@ -79,7 +80,7 @@ function get_members($pdo, $status_filter = 'All', $search = '', $sort_params = 
     }
 
     // Apply sorting
-    $allowed_columns = ['MemberID', 'FullName', 'PhoneNo', 'JoinDate'];
+    $allowed_columns = ['MemberID', 'FullName', 'PhoneNo', 'JoinDate', 'createdAt'];
     $sort_column = $sort_params['column'] ?? null;
     $sort_order = $sort_params['order'] ?? 'ASC';
     
@@ -96,11 +97,27 @@ function get_members($pdo, $status_filter = 'All', $search = '', $sort_params = 
         }
     } else {
         // Default sorting (when no sort is applied or after third click)
-        $sql .= " ORDER BY JoinDate DESC";
+        $sql .= " ORDER BY createdAt DESC";
     }
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function formatMemberDate($date_string, $format = 'full') {
+    if (!$date_string) return 'N/A';
+    
+    $date = new DateTime($date_string);
+    
+    if ($format === 'full') {
+        return $date->format('M d, Y g:i A');
+    } elseif ($format === 'short') {
+        return $date->format('m/d/y');
+    } elseif ($format === 'time') {
+        return $date->format('g:i A');
+    }
+    
+    return $date->format('Y-m-d H:i:s');
 }
 ?>
