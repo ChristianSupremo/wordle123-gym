@@ -16,12 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $start_date = $_POST['StartDate'];
     $status = $_POST['Status']; // user-selected (may be Cancelled, otherwise ignored)
     
+    // NEW: Capture payment details from renewal form
+    $payment_method_name = $_POST['PaymentMethod'] ?? null;
+    $reference_number = $_POST['ReferenceNumber'] ?? null;
+    $notes = $_POST['Notes'] ?? null;
+    
     // Fetch plan details to calculate end date
-    $stmt = $pdo->prepare("SELECT Duration, PlanType FROM Plan WHERE PlanID = ?");
+    $stmt = $pdo->prepare("SELECT Duration, PlanType, Rate FROM Plan WHERE PlanID = ?");
     $stmt->execute([$plan_id]);
     $plan = $stmt->fetch();
     $duration = $plan['Duration'];
     $plan_type = strtolower($plan['PlanType']);
+    $plan_rate = $plan['Rate'];
 
     // Calculate EndDate based on PlanType
     if ($plan_type == 'days') {
@@ -46,8 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $computed_status = ($end_date < date('Y-m-d')) ? 'Expired' : 'Active';
         }
     } else {
-        // NEW membership → always Pending
-        $computed_status = 'Pending';
+        // NEW membership → check if payment provided
+        if ($payment_method_name) {
+            // If payment details provided, set to Active
+            $computed_status = ($end_date < date('Y-m-d')) ? 'Expired' : 'Active';
+        } else {
+            // No payment → Pending
+            $computed_status = 'Pending';
+        }
     }
 
     $staff_id = $_SESSION['staff_id'];
@@ -76,6 +88,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$member_id, $new_membership_id, $terms]);
 
+        // NEW: Create payment record if payment details provided
+        if ($payment_method_name) {
+            // Get PaymentMethodID from PaymentMethods table
+            $stmt = $pdo->prepare("SELECT PaymentMethodID FROM PaymentMethods WHERE MethodName = ?");
+            $stmt->execute([$payment_method_name]);
+            $payment_method = $stmt->fetch();
+            
+            if ($payment_method) {
+                $payment_method_id = $payment_method['PaymentMethodID'];
+                
+                // Insert payment record
+                $sql = "INSERT INTO Payment 
+                        (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks, PaymentStatus, PaymentDate)
+                        VALUES (?, ?, ?, ?, ?, ?, 'Completed', NOW())";
+                
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    $new_membership_id,
+                    $payment_method_id,
+                    $staff_id,
+                    $plan_rate, // Use plan rate as amount paid
+                    $reference_number,
+                    $notes
+                ]);
+            }
+        }
+
         // Member auto-active if membership is active
         if ($computed_status === 'Active') {
             $sql = "UPDATE Member SET MembershipStatus = 'Active' WHERE MemberID = ?";
@@ -83,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$member_id]);
         }
 
-        $_SESSION['message'] = "Membership saved successfully!";
+        $_SESSION['message'] = "Membership renewed and payment recorded successfully!";
     }
 
     // --- SYNC MEMBER STATUS ---

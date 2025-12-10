@@ -21,7 +21,8 @@
 
                     <!-- FORM CONTENT -->
                     <div id="renew-membership-form" style="display:none;">
-                        <input type="hidden" name="renew_member_id" id="renew_member_id">
+                        <!-- CRITICAL FIX: Changed name from "renew_member_id" to just id -->
+                        <input type="hidden" id="renew_member_id">
 
                         <!-- READ-ONLY SECTION -->
                         <div class="form-section">

@@ -131,6 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const saveBtn = document.getElementById('saveMembershipRenewBtn');
         const formData = new FormData(this);
 
+        // IMPORTANT: Pass MemberID (not membership_id)
         formData.append('MemberID', document.getElementById('renew_member_id').value);
 
         saveBtn.disabled = true;
@@ -139,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch('memberships.php', { method: 'POST', body: formData })
             .then(res => {
                 if (res.redirected) {
-                    toast.success('Membership renewed successfully!', 3000);
+                    toast.success('Membership renewed and payment recorded successfully!', 3000);
                     setTimeout(() => window.location.href = res.url, 800);
                 } else {
                     throw new Error();
