@@ -10,38 +10,69 @@ check_login();
 
 // --- Handle Form Submissions ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $payment_id = $_POST['payment_id'] ?? null;
-    $membership_id = $_POST['MembershipID'];
-    $payment_method_id = $_POST['PaymentMethod'];
-    $amount_paid = $_POST['AmountPaid'];
-    $reference_number = $_POST['ReferenceNumber'] ?? null;
-    $remarks = $_POST['Remarks'] ?? null;
-    $payment_status = $_POST['PaymentStatus'] ?? 'Completed';
-    $staff_id = $_SESSION['staff_id'];
+    header('Content-Type: application/json');
 
-    if ($payment_id) {
-        // UPDATE
-        $sql = "UPDATE Payment 
-                SET PaymentMethodID=?, AmountPaid=?, ReferenceNumber=?, Remarks=?, PaymentStatus=? 
-                WHERE PaymentID=?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$payment_method_id, $amount_paid, $reference_number, $remarks, $payment_status, $payment_id]);
+    try {
+        $payment_id = $_POST['payment_id'] ?? null;
+        $membership_id = $_POST['MembershipID'];
+        $payment_method_id = $_POST['PaymentMethod'];
+        $amount_paid = $_POST['AmountPaid'];
+        $reference_number = $_POST['ReferenceNumber'] ?? null;
+        $remarks = $_POST['Remarks'] ?? null;
+        $payment_status = $_POST['PaymentStatus'] ?? 'Completed';
+        $staff_id = $_SESSION['staff_id'];
 
-        $_SESSION['message'] = "Payment updated successfully!";
-    } else {
-        // INSERT
-        $sql = "INSERT INTO Payment (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks, PaymentStatus, PaymentDate)
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$membership_id, $payment_method_id, $staff_id, $amount_paid, $reference_number, $remarks, $payment_status]);
+        if ($payment_id) {
+            // UPDATE
+            $sql = "UPDATE Payment 
+                    SET PaymentMethodID=?, AmountPaid=?, ReferenceNumber=?, Remarks=?, PaymentStatus=? 
+                    WHERE PaymentID=?";
+            $stmt = $pdo->prepare($sql);
+            $success = $stmt->execute([
+                $payment_method_id,
+                $amount_paid,
+                $reference_number,
+                $remarks,
+                $payment_status,
+                $payment_id
+            ]);
 
-        $_SESSION['message'] = "Payment recorded successfully!";
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? "Payment updated successfully" : "Failed to update payment"
+            ]);
+        } else {
+            // INSERT
+            $sql = "INSERT INTO Payment 
+                    (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks, PaymentStatus, PaymentDate)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+
+            $stmt = $pdo->prepare($sql);
+            $success = $stmt->execute([
+                $membership_id,
+                $payment_method_id,
+                $staff_id,
+                $amount_paid,
+                $reference_number,
+                $remarks,
+                $payment_status
+            ]);
+
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? "Payment recorded successfully" : "Failed to record payment"
+            ]);
+        }
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => "Error: " . $e->getMessage()
+        ]);
     }
 
-    $_SESSION['message_type'] = "success";
-    header('Location: payments.php');
     exit();
 }
+
 
 // Fetch data for list view
 if ($action === 'list') {

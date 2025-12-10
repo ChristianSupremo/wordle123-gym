@@ -219,10 +219,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Form submission
-    handleFormSubmit(
-        'addPaymentForm',
-        'savePaymentAddBtn',
-        'Payment recorded successfully! Refreshing...'
-    );
+    document.getElementById('addPaymentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const saveBtn = document.getElementById('savePaymentAddBtn');
+        const originalBtnText = saveBtn.innerHTML;
+        
+        // Disable button and show loading
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Recording...';
+        
+        try {
+            const formData = new FormData(this);
+            formData.append('action', 'create');
+            
+            const response = await fetch('payments.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toast.success('Payment recorded successfully!', 4000);
+                PaymentAddModal.close();
+                
+                // Reload page after short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                toast.error(result.message || 'Failed to record payment. Please try again.', 5000);
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalBtnText;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('An error occurred while recording the payment. Please try again.', 5000);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnText;
+        }
+    });
 });
 </script>
