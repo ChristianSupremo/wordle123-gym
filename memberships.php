@@ -123,7 +123,7 @@ if ($action === 'list') {
                CONCAT(mem.FirstName, ' ', mem.LastName) AS MemberName,
                mem.FirstName,
                mem.LastName,
-               p.PlanName,
+               pl.PlanName,
                m.StartDate,
                m.EndDate,
                m.Status,
@@ -131,7 +131,7 @@ if ($action === 'list') {
                DATEDIFF(m.EndDate, CURDATE()) AS DaysLeft
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
-        LEFT JOIN Plan p ON m.PlanID = p.PlanID
+        LEFT JOIN Plan pl ON m.PlanID = pl.PlanID
         WHERE 1=1
     ";
 
@@ -148,7 +148,7 @@ if ($action === 'list') {
         $sql .= " AND (mem.FirstName LIKE ?
                        OR mem.LastName LIKE ?
                        OR CONCAT(mem.FirstName, ' ', mem.LastName) LIKE ?
-                       OR p.PlanName LIKE ?)";
+                       OR pl.PlanName LIKE ?)";
         $like = '%' . $search . '%';
         $params[] = $like;
         $params[] = $like;
