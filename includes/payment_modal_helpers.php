@@ -5,7 +5,7 @@
  */
 
 /**
- * Get active memberships for payment dropdowns
+ * Get active AND pending memberships for payment dropdowns
  */
 function getActiveMemberships($pdo) {
     $stmt = $pdo->query("
@@ -16,16 +16,22 @@ function getActiveMemberships($pdo) {
             p.PlanName,
             p.Rate,
             m.StartDate,
-            m.EndDate
+            m.EndDate,
+            m.Status
         FROM Membership m
         JOIN Member mem ON m.MemberID = mem.MemberID
         JOIN Plan p ON m.PlanID = p.PlanID
-        WHERE m.Status = 'Active'
-        ORDER BY mem.LastName, mem.FirstName
+        WHERE m.Status IN ('Active', 'Pending')
+        ORDER BY 
+            CASE m.Status
+                WHEN 'Pending' THEN 1
+                WHEN 'Active' THEN 2
+            END,
+            mem.LastName, 
+            mem.FirstName
     ");
     return $stmt->fetchAll();
 }
-
 /**
  * Get active payment methods
  */
@@ -58,12 +64,17 @@ function renderPaymentMethodOptions($payment_methods, $selected_id = null) {
  */
 function renderMembershipOptions($active_memberships) {
     foreach ($active_memberships as $membership) {
+        $statusBadge = $membership['Status'] === 'Pending' 
+            ? '<span class="status-badge-small pending">Pending</span>' 
+            : '<span class="status-badge-small active">Active</span>';
+        
         echo '<div class="searchable-select-option membership-option" 
                    data-value="' . $membership['MembershipID'] . '"
                    data-text="' . htmlspecialchars($membership['MemberName'] . ' - ' . $membership['PlanName']) . '"
                    data-rate="' . $membership['Rate'] . '">';
         echo '<div class="membership-option-header">';
         echo htmlspecialchars($membership['MemberName']);
+        echo ' ' . $statusBadge;
         echo '</div>';
         echo '<div class="membership-option-details">';
         echo '<span class="plan-name">' . htmlspecialchars($membership['PlanName']) . '</span>';

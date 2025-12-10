@@ -194,6 +194,24 @@
     color: #991b1b;
 }
 
+.status-badge-small {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.status-badge-small.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge-small.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 .payment-view-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

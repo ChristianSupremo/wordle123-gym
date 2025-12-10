@@ -368,20 +368,15 @@ document.getElementById('addMembershipForm').addEventListener('submit', function
     
     fetch('memberships.php', {
         method: 'POST',
-        body: formData
+        body: formData,
+        redirect: 'follow'
     })
     .then(response => {
-        // Check if response redirected (successful form submission)
-        if (response.redirected) {
-            toast.success('Membership created successfully! Refreshing...', 3000);
-            setTimeout(() => {
-                window.location.href = response.url;
-            }, 1000);
-        } else {
-            return response.text().then(text => {
-                throw new Error('Creation failed');
-            });
-        }
+        // Simply reload the page on success
+        toast.success('Membership created successfully!', 2000);
+        setTimeout(() => {
+            window.location.href = 'memberships.php';
+        }, 1000);
     })
     .catch(error => {
         console.error('Error:', error);
