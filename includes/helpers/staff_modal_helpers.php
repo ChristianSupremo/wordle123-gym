@@ -1,7 +1,7 @@
 <?php
 /**
  * Staff Modal Helper Functions
- * Path: includes/staff_modal_helpers.php
+ * Path: includes/helpers/staff_modal_helpers.php
  */
 
 /**

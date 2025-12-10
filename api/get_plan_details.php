@@ -6,7 +6,7 @@
 
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-require_once '../includes/plan_modal_helpers.php';
+require_once '../includes/helpers/plan_modal_helpers.php';
 
 header('Content-Type: application/json');
 

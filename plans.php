@@ -1,7 +1,7 @@
 <?php
 require_once 'config/db.php';
 require_once 'includes/functions.php';
-require_once 'includes/plan_modal_helpers.php';
+require_once 'includes/helpers/plan_modal_helpers.php';
 check_login();
 
 $action = $_GET['action'] ?? 'list';

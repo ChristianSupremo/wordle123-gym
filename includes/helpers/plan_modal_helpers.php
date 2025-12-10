@@ -1,7 +1,7 @@
 <?php
 /**
  * Plan Modal Helper Functions
- * Path: includes/plan_modal_helpers.php
+ * Path: includes/helpers/plan_modal_helpers.php
  */
 
 /**

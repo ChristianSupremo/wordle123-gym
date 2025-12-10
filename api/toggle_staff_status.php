@@ -6,7 +6,7 @@
 
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-require_once '../includes/staff_modal_helpers.php';
+require_once '../includes/helpers/staff_modal_helpers.php';
 check_login();
 
 header('Content-Type: application/json');
