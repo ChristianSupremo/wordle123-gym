@@ -2,7 +2,7 @@
 // config/db.php
 
  $host = 'localhost';
- $db_name = 'gym_db'; // Your database name
+ $db_name = 'gym_copy'; // Your database name
  $username = 'root';      // Your database username
  $password = '';          // Your database password
  $charset = 'utf8mb4';
