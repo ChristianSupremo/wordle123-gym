@@ -58,30 +58,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body class="login-page">
     <div class="login-container">
-        <!-- Left Section - Gym Image -->
-        <div class="left-section"></div>
+        <!-- Left Section - Existing gym photo with product messaging -->
+        <section class="left-section" aria-label="NEWYOU gym management">
+            <div class="login-brand-mark">
+                <img src="assets/css/style/logo.png" alt="NEWYOU">
+            </div>
+            <div class="login-hero-copy">
+                <p class="login-eyebrow">NEWYOU GYM MANAGEMENT</p>
+                <h2>Your gym.<br><span>Better managed.</span></h2>
+                <p class="login-hero-description">Everything you need to keep members moving.</p>
+                <div class="login-feature-list" aria-label="Platform features">
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-people"></i></span><span>Memberships</span></div>
+                    <span class="login-feature-divider" aria-hidden="true"></span>
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-calendar2-check"></i></span><span>Attendance</span></div>
+                    <span class="login-feature-divider" aria-hidden="true"></span>
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-credit-card"></i></span><span>Payments</span></div>
+                </div>
+            </div>
+        </section>
 
         <!-- Right Section - Login Form -->
-        <div class="right-section">
+        <section class="right-section" aria-label="Sign in">
             <div class="login-form">
                 <div class="logo">
                     <img src="assets/css/style/logo.png" class="logo-icon">
                 </div>
                 
-                <h1>Log in to your account</h1>
-                <p class="subtitle">Welcome back! Please enter your details.</p>
+                <h1>Welcome back</h1>
+                <p class="subtitle">Sign in to manage your gym.</p>
 
                 <form action="index.php" method="post" id="loginForm">
                     <div class="form-group">
-                        <label for="username">Email</label>
-                        <input type="text" id="username" name="username" placeholder="Enter your email" required>
+                        <label for="username">Email address</label>
+                        <div class="login-input-wrapper">
+                            <i class="bi bi-envelope" aria-hidden="true"></i>
+                            <input type="text" id="username" name="username" placeholder="Enter your email" autocomplete="username" required>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-input-wrapper">
-                            <input type="password" id="password" name="password" placeholder="••••••••" required>
-                            <button type="button" class="password-toggle-btn-login" onclick="toggleLoginPassword()">
+                            <i class="bi bi-lock login-password-icon" aria-hidden="true"></i>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+                            <button type="button" class="password-toggle-btn-login" onclick="toggleLoginPassword()" aria-label="Show password">
                                 <i class="bi bi-eye" id="password-toggle-icon"></i>
                             </button>
                         </div>
@@ -94,11 +114,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
 
                     <div class="forgot-password">
-                        <a href="forgot-password.php">Forgot password</a>
+                        <a href="forgot-password.php">Forgot password?</a>
                     </div>
 
-                    <button type="submit" class="sign-in-btn">Sign in</button>
+                    <button type="submit" class="sign-in-btn">Sign in <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
                 </form>
+                <div class="login-secure-note"><span class="login-secure-rule"></span><i class="bi bi-shield-check" aria-hidden="true"></i><span>Secure access for your team.</span><span class="login-secure-rule"></span></div>
             </div>
         </div>
     </div>
