@@ -208,6 +208,19 @@ function initDarkMode() {
             toast.success('Light mode enabled');
         }
     });
+
+    // In the collapsed sidebar, use the moon icon as the dark-mode control.
+    const darkModeIcon = document.querySelector('.dark-mode-toggle > i');
+    const sidebar = document.getElementById('sidebar');
+
+    if (darkModeIcon && sidebar) {
+        darkModeIcon.addEventListener('click', function() {
+            if (!sidebar.classList.contains('collapsed')) return;
+
+            darkModeToggle.checked = !darkModeToggle.checked;
+            darkModeToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
 }
 
 // ========================================
