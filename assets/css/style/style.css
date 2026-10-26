@@ -3369,3 +3369,31 @@ body.dark-mode .readonly-value {
 body.dark-mode .readonly-info-item label {
     color: #a0aec0;
 }
+
+/* Collapsed sidebar: compact, clickable dark-mode control */
+.sidebar.collapsed .dark-mode-toggle {
+    justify-content: center;
+    gap: 0;
+    padding: 16px 0;
+    min-height: 70px;
+}
+
+.sidebar.collapsed .dark-mode-toggle > span,
+.sidebar.collapsed .dark-mode-toggle .toggle-switch {
+    display: none;
+}
+
+.sidebar.collapsed .dark-mode-toggle > i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.sidebar.collapsed .dark-mode-toggle > i:hover {
+    color: var(--accent-color);
+    background-color: var(--hover-bg);
+}
