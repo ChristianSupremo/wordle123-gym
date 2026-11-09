@@ -51,6 +51,10 @@ $stmt = $pdo->query("
 ");
 $total_revenue = $stmt->fetch()['monthly_revenue'] ?? 0;
 
+// Today's attendance summary
+$today_checkins = (int) $pdo->query("SELECT COUNT(*) FROM Attendance WHERE DATE(CheckIn) = CURDATE()")->fetchColumn();
+$members_inside = (int) $pdo->query("SELECT COUNT(*) FROM Attendance WHERE DATE(CheckIn) = CURDATE() AND CheckOut IS NULL")->fetchColumn();
+
 // Members per plan (for pie chart)
 $stmt = $pdo->query("
     SELECT 
@@ -138,6 +142,25 @@ $upcoming_expirations = $stmt->fetchAll();
 
 <!-- Content Grid -->
 <div class="content-grid">
+    <!-- Today's Attendance Summary -->
+    <div class="dashboard-card">
+        <div class="card-header-flex">
+            <h2 class="card-title">Today's Attendance</h2>
+            <a href="attendance.php" class="see-all-link">View attendance</a>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;padding:12px 0;">
+            <div>
+                <div class="stat-label">Total Check-ins</div>
+                <div class="stat-value"><?php echo $today_checkins; ?></div>
+            </div>
+            <div>
+                <div class="stat-label">Currently Inside</div>
+                <div class="stat-value"><?php echo $members_inside; ?></div>
+            </div>
+        </div>
+        <p style="color:#718096;font-size:13px;margin:0;">Live attendance totals for today.</p>
+    </div>
+
     <!-- New Members This Month -->
     <div class="dashboard-card">
         <div class="card-header-flex">
