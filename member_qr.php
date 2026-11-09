@@ -37,8 +37,8 @@ new QRCode(document.getElementById('qr'), {
     text: 'GYM-<?php echo (int) $m['MemberID']; ?>',
     width: 256,
     height: 256,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
+    colorDark: "#000000",   // Black QR blocks
+    colorLight: "#ffffff",  // White background
     correctLevel: QRCode.CorrectLevel.H
 });
 </script>

@@ -129,77 +129,56 @@ $colors = ['ok' => '#48bb78', 'warn' => '#f6ad55', 'denied' => '#fc8181'];
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
+let html5QrCode = null;
+
 document.getElementById('camBtn').addEventListener('click', async function () {
     const button = this;
-    const reader = document.getElementById('reader');
+    
+    if (html5QrCode && html5QrCode.isScanning) {
+        await html5QrCode.stop();
+        button.textContent = 'Use camera';
+        return;
+    }
 
     button.disabled = true;
     button.textContent = 'Starting camera...';
 
-    const scanner = new Html5Qrcode('reader', {
-        formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE
-        ],
-        verbose: true
-    });
+    html5QrCode = new Html5Qrcode("reader");
+
+    const config = {
+        fps: 15,
+        // Using experimental features allows reading inverted QR codes & improves focus
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        },
+        // Increase resolution request to help webcams read smaller phone screens
+        videoConstraints: {
+            width: { min: 640, ideal: 1280 },
+            height: { min: 480, ideal: 720 },
+            facingMode: "user"
+        }
+    };
 
     try {
-        // Detect available cameras instead of forcing environment mode.
-        const cameras = await Html5Qrcode.getCameras();
-
-        if (!cameras || cameras.length === 0) {
-            throw new Error('No cameras detected.');
-        }
-
-        console.log('Available cameras:', cameras);
-
-        // Select the first available camera.
-        const cameraId = cameras[0].id;
-
-        button.textContent = 'Scanning...';
-
-        await scanner.start(
-            cameraId,
-            {
-                fps: 15,
-                qrbox: {
-                    width: 280,
-                    height: 280
-                },
-                aspectRatio: 1.0
+        await html5QrCode.start(
+            { facingMode: "user" },
+            config,
+            async (decodedText) => {
+                await html5QrCode.stop();
+                document.getElementById('member_id').value = decodedText.trim();
+                document.getElementById('checkinForm').submit();
             },
-            async function (decodedText) {
-                console.log('QR detected:', decodedText);
-
-                button.textContent = 'QR detected!';
-
-                try {
-                    await scanner.stop();
-
-                    document.getElementById('member_id').value =
-                        decodedText.trim();
-
-                    document.getElementById('checkinForm').submit();
-
-                } catch (error) {
-                    console.error('Scanner stop error:', error);
-                }
-            },
-            function () {
-                // Ignore frames without a detected QR code.
-            }
+            () => {}
         );
-
-    } catch (error) {
-        console.error('Camera error:', error);
-
-        alert('Unable to start QR scanner: ' + error);
-
+        button.disabled = false;
+        button.textContent = 'Stop camera';
+    } catch (err) {
+        console.error('Camera error:', err);
+        alert('Unable to start camera: ' + err);
         button.disabled = false;
         button.textContent = 'Use camera';
     }
 });
-
 </script>
 
 <?php include 'includes/footer.php'; ?>
