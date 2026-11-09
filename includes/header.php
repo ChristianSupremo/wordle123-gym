@@ -17,7 +17,6 @@ if (session_status() == PHP_SESSION_NONE) {
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>
     <div class="dashboard-wrapper">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <img src="assets/css/style/logo.png" class="logo-icon">
@@ -28,7 +27,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
             <div class="user-profile">
                 <div class="user-avatar">
-                    <?php 
+                    <?php
                     $initials = '';
                     $name_parts = explode(' ', $_SESSION['staff_name']);
                     foreach ($name_parts as $part) {
@@ -46,41 +45,42 @@ if (session_status() == PHP_SESSION_NONE) {
             <ul class="sidebar-nav">
                 <li class="nav-item">
                     <a href="dashboard.php" data-tooltip="Dashboard" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-house-door"></i>
-                        <span>Dashboard</span>
+                        <i class="bi bi-house-door"></i><span>Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="members.php" data-tooltip="Members" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'members.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-people"></i>
-                        <span>Members</span>
+                        <i class="bi bi-people"></i><span>Members</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="memberships.php" data-tooltip="Memberships"
-                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'memberships.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-card-checklist"></i>
-                        <span>Memberships</span>
+                    <a href="memberships.php" data-tooltip="Memberships" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'memberships.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-card-checklist"></i><span>Memberships</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="payments.php" data-tooltip="Payments"
-                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-credit-card"></i>
-                        <span>Payments</span>
+                    <a href="payments.php" data-tooltip="Payments" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-credit-card"></i><span>Payments</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="plans.php" data-tooltip="Plans" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-tag"></i>
-                        <span>Manage Plans</span>
+                        <i class="bi bi-tag"></i><span>Manage Plans</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="staff.php" data-tooltip="Staff"
-                    class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; ?>">
-                        <i class="bi bi-person-badge"></i>
-                        <span>Staff</span>
+                    <a href="attendance.php" data-tooltip="Attendance" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'attendance.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-qr-code-scan"></i><span>Attendance</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="insights.php" data-tooltip="Insights" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'insights.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-graph-up"></i><span>Member Insights</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="staff.php" data-tooltip="Staff" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-person-badge"></i><span>Staff</span>
                     </a>
                 </li>
             </ul>
@@ -95,12 +95,10 @@ if (session_status() == PHP_SESSION_NONE) {
             </div>
 
             <a href="#" onclick="logoutNow()" class="logout-btn" data-tooltip="Log Out">
-                <i class="bi bi-box-arrow-right"></i>
-                <span>Log Out</span>
+                <i class="bi bi-box-arrow-right"></i><span>Log Out</span>
             </a>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
             <?php echo flash_message(); ?>
     <?php else: ?>
