@@ -129,27 +129,77 @@ $colors = ['ok' => '#48bb78', 'warn' => '#f6ad55', 'denied' => '#fc8181'];
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-document.getElementById('camBtn').addEventListener('click', function () {
-  const button = this;
-  if (typeof Html5Qrcode === 'undefined') {
-    alert('Camera scanner failed to load. Use the input box or a USB scanner instead.');
-    return;
-  }
-  button.disabled = true;
-  const scanner = new Html5Qrcode('reader');
-  scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, function (text) {
-    scanner.stop().then(function () {
-      document.getElementById('member_id').value = text;
-      document.getElementById('checkinForm').requestSubmit();
-    }).catch(function () {
-      button.disabled = false;
+document.getElementById('camBtn').addEventListener('click', async function () {
+    const button = this;
+    const reader = document.getElementById('reader');
+
+    button.disabled = true;
+    button.textContent = 'Starting camera...';
+
+    const scanner = new Html5Qrcode('reader', {
+        formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE
+        ],
+        verbose: true
     });
-  }).catch(function () {
-    button.disabled = false;
-    alert('Camera unavailable. Use the box above instead.');
-  });
+
+    try {
+        // Detect available cameras instead of forcing environment mode.
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+            throw new Error('No cameras detected.');
+        }
+
+        console.log('Available cameras:', cameras);
+
+        // Select the first available camera.
+        const cameraId = cameras[0].id;
+
+        button.textContent = 'Scanning...';
+
+        await scanner.start(
+            cameraId,
+            {
+                fps: 15,
+                qrbox: {
+                    width: 280,
+                    height: 280
+                },
+                aspectRatio: 1.0
+            },
+            async function (decodedText) {
+                console.log('QR detected:', decodedText);
+
+                button.textContent = 'QR detected!';
+
+                try {
+                    await scanner.stop();
+
+                    document.getElementById('member_id').value =
+                        decodedText.trim();
+
+                    document.getElementById('checkinForm').submit();
+
+                } catch (error) {
+                    console.error('Scanner stop error:', error);
+                }
+            },
+            function () {
+                // Ignore frames without a detected QR code.
+            }
+        );
+
+    } catch (error) {
+        console.error('Camera error:', error);
+
+        alert('Unable to start QR scanner: ' + error);
+
+        button.disabled = false;
+        button.textContent = 'Use camera';
+    }
 });
-document.getElementById('member_id').focus();
+
 </script>
 
 <?php include 'includes/footer.php'; ?>

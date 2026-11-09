@@ -1,0 +1,129 @@
+<?php
+// attendance.php - QR / ID check-in and check-out
+require_once 'config/db.php';
+require_once 'includes/functions.php';
+check_login();
+
+$staff_id = $_SESSION['staff_id'] ?? null; // adjust if your login stores the staff id under another key
+$result = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // QR payload is "GYM-<MemberID>"; typing a plain ID also works
+    $member_id = (int) preg_replace('/\D/', '', $_POST['member_id'] ?? '');
+
+    $stmt = $pdo->prepare("SELECT MemberID, FirstName, LastName FROM member WHERE MemberID = ?");
+    $stmt->execute([$member_id]);
+    $member = $stmt->fetch();
+
+    if (!$member) {
+        $result = ['type' => 'denied', 'title' => 'Member not found', 'text' => 'Check the ID or scan the code again.'];
+    } else {
+        $name = $member['FirstName'] . ' ' . $member['LastName'];
+
+        // Latest membership
+        $stmt = $pdo->prepare("SELECT ms.MembershipID, ms.Status, ms.EndDate, p.PlanName,
+                                      DATEDIFF(ms.EndDate, CURDATE()) AS days_left
+                               FROM membership ms LEFT JOIN plan p ON p.PlanID = ms.PlanID
+                               WHERE ms.MemberID = ? ORDER BY ms.EndDate DESC LIMIT 1");
+        $stmt->execute([$member_id]);
+        $ms = $stmt->fetch();
+
+        // Already inside today? Then this scan is a check-out
+        $stmt = $pdo->prepare("SELECT AttendanceID FROM attendance
+                               WHERE MemberID = ? AND CheckOut IS NULL AND DATE(CheckIn) = CURDATE()
+                               ORDER BY CheckIn DESC LIMIT 1");
+        $stmt->execute([$member_id]);
+        $open = $stmt->fetch();
+
+        if ($open) {
+            $pdo->prepare("UPDATE attendance SET CheckOut = NOW() WHERE AttendanceID = ?")->execute([$open['AttendanceID']]);
+            $result = ['type' => 'ok', 'title' => 'Checked out', 'text' => "See you next time, {$member['FirstName']}!"];
+        } elseif (!$ms) {
+            $result = ['type' => 'denied', 'title' => 'No membership', 'text' => "$name has no membership on record. Send them to the front desk."];
+        } elseif ($ms['Status'] !== 'Active' || $ms['days_left'] < 0) {
+            $result = ['type' => 'denied', 'title' => 'Membership expired', 'text' => "$name's {$ms['PlanName']} plan ended on " . date('M j, Y', strtotime($ms['EndDate'])) . ". Renew it to allow entry."];
+        } else {
+            $pdo->prepare("INSERT INTO attendance (MemberID, MembershipID, StaffID) VALUES (?, ?, ?)")
+                ->execute([$member_id, $ms['MembershipID'], $staff_id]);
+            $warn = $ms['days_left'] <= 7 ? " Membership ends in {$ms['days_left']} day(s) - offer a renewal." : '';
+            $result = ['type' => $warn ? 'warn' : 'ok', 'title' => 'Welcome, ' . $member['FirstName'],
+                       'text' => "{$ms['PlanName']} plan, {$ms['days_left']} days left.$warn"];
+        }
+    }
+}
+
+$checkins_today = (int) $pdo->query("SELECT COUNT(*) FROM attendance WHERE DATE(CheckIn) = CURDATE()")->fetchColumn();
+$inside_now = (int) $pdo->query("SELECT COUNT(*) FROM attendance WHERE DATE(CheckIn) = CURDATE() AND CheckOut IS NULL")->fetchColumn();
+
+$today_rows = $pdo->query("SELECT a.CheckIn, a.CheckOut, m.MemberID, m.FirstName, m.LastName
+                           FROM attendance a JOIN member m ON m.MemberID = a.MemberID
+                           WHERE DATE(a.CheckIn) = CURDATE() ORDER BY a.CheckIn DESC LIMIT 30")->fetchAll();
+
+$colors = ['ok' => '#48bb78', 'warn' => '#f6ad55', 'denied' => '#fc8181'];
+?>
+<?php include 'includes/header.php'; ?>
+
+<div class="page-header"><h1 class="page-title">Attendance</h1></div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Check-ins Today</div><div class="stat-value"><?php echo $checkins_today; ?></div></div>
+  <div class="stat-card"><div class="stat-label">Inside Now</div><div class="stat-value"><?php echo $inside_now; ?></div></div>
+</div>
+
+<div class="content-grid">
+  <div class="dashboard-card">
+    <div class="card-header-flex"><h2 class="card-title">Check-in</h2></div>
+
+    <?php if ($result): ?>
+      <div style="border-left:6px solid <?php echo $colors[$result['type']]; ?>;background:#f7fafc;padding:14px 16px;margin-bottom:16px;border-radius:6px;">
+        <strong><?php echo htmlspecialchars($result['title']); ?></strong><br>
+        <span style="color:#4a5568;"><?php echo htmlspecialchars($result['text']); ?></span>
+      </div>
+    <?php endif; ?>
+
+    <form method="post" id="checkinForm" autocomplete="off" style="display:flex;gap:8px;">
+      <input type="text" name="member_id" id="member_id" placeholder="Scan QR or type Member ID" autofocus required
+             style="flex:1;padding:10px 12px;border:1px solid #cbd5e0;border-radius:6px;">
+      <button type="submit" style="padding:10px 18px;border:0;border-radius:6px;background:#4fd1c5;color:#fff;cursor:pointer;">Check in</button>
+    </form>
+    <p style="color:#718096;font-size:13px;margin:8px 0 12px;">A USB barcode/QR scanner types the code and presses Enter, so it works with this box. Scanning a member who is already inside checks them out.</p>
+
+    <button type="button" id="camBtn" style="padding:8px 14px;border:1px solid #cbd5e0;background:#fff;border-radius:6px;cursor:pointer;">Use camera</button>
+    <div id="reader" style="width:100%;max-width:320px;margin-top:12px;"></div>
+  </div>
+
+  <div class="dashboard-card" style="grid-column: span 2;">
+    <div class="card-header-flex"><h2 class="card-title">Today's Visits</h2></div>
+    <table class="dashboard-table">
+      <thead><tr><th>Member</th><th>In</th><th>Out</th></tr></thead>
+      <tbody>
+      <?php if ($today_rows): foreach ($today_rows as $r): ?>
+        <tr>
+          <td><?php echo htmlspecialchars($r['FirstName'] . ' ' . $r['LastName']); ?></td>
+          <td><?php echo date('g:i A', strtotime($r['CheckIn'])); ?></td>
+          <td><?php echo $r['CheckOut'] ? date('g:i A', strtotime($r['CheckOut'])) : '<span class="plan-badge">Inside</span>'; ?></td>
+        </tr>
+      <?php endforeach; else: ?>
+        <tr><td colspan="3" style="text-align:center;color:#718096;">No check-ins yet today</td></tr>
+      <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+document.getElementById('camBtn').addEventListener('click', function () {
+  this.disabled = true;
+  const scanner = new Html5Qrcode('reader');
+  scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, function (text) {
+    scanner.stop().then(function () {
+      document.getElementById('member_id').value = text;
+      document.getElementById('checkinForm').submit();
+    });
+  }).catch(function () { alert('Camera unavailable. Use the box above instead.'); });
+});
+document.getElementById('member_id').focus();
+</script>
+
+<?php include 'includes/footer.php'; ?>

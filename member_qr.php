@@ -22,7 +22,12 @@ if (!$m) {
 <div class="page-header"><h1 class="page-title">Member QR Card</h1></div>
 <div class="dashboard-card" style="max-width:340px;text-align:center;">
   <h2 class="card-title"><?php echo htmlspecialchars($m['FirstName'] . ' ' . $m['LastName']); ?></h2>
-  <div id="qr" style="display:inline-block;margin:16px 0;"></div>
+  <div id="qr" style="
+    display: inline-block;
+    margin: 16px 0;
+    padding: 12px;
+    background: #ffffff;
+"></div>
   <div style="color:#718096;">Member ID: GYM-<?php echo (int) $m['MemberID']; ?></div>
   <button onclick="window.print()" style="margin-top:14px;padding:8px 16px;border:0;border-radius:6px;background:#4fd1c5;color:#fff;cursor:pointer;">Print card</button>
 </div>
@@ -30,8 +35,11 @@ if (!$m) {
 <script>
 new QRCode(document.getElementById('qr'), {
     text: 'GYM-<?php echo (int) $m['MemberID']; ?>',
-    width: 200,
-    height: 200
+    width: 256,
+    height: 256,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
 });
 </script>
 <?php include 'includes/footer.php'; ?>
