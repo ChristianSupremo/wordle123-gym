@@ -85,20 +85,34 @@ $stmt = $pdo->query("
 ");
 $new_members = $stmt->fetchAll();
 
-// Upcoming expirations
-$stmt = $pdo->query("
-    SELECT m.FirstName, m.LastName, mem.EndDate, p.PlanName,
-           DATEDIFF(mem.EndDate, CURRENT_DATE()) as days_left
-    FROM Member m
-    JOIN Membership mem ON m.MemberID = mem.MemberID
-    JOIN Plan p ON mem.PlanID = p.PlanID
-    WHERE mem.Status = 'Active'
-      AND DATEDIFF(mem.EndDate, CURRENT_DATE()) <= 7
-      AND DATEDIFF(mem.EndDate, CURRENT_DATE()) >= 0
-    ORDER BY mem.EndDate ASC
-    LIMIT 4
-");
-$upcoming_expirations = $stmt->fetchAll();
+// Upcoming expirations: each member's CURRENT (latest) membership ending within the next 30 days.
+// Wrapped in try/catch so a query problem shows a message in the card instead of breaking the page.
+$upcoming_expirations = [];
+$expirations_error = false;
+try {
+    $stmt = $pdo->query("
+        SELECT m.MemberID, m.FirstName, m.LastName, mem.EndDate, p.PlanName,
+               DATEDIFF(mem.EndDate, CURDATE()) AS days_left
+        FROM member m
+        JOIN membership mem ON mem.MemberID = m.MemberID
+        LEFT JOIN plan p ON p.PlanID = mem.PlanID
+        WHERE mem.MembershipID = (
+                SELECT ms2.MembershipID FROM membership ms2
+                WHERE ms2.MemberID = m.MemberID
+                ORDER BY ms2.StartDate DESC, ms2.MembershipID DESC
+                LIMIT 1
+            )
+          AND mem.Status = 'Active'
+          AND mem.EndDate IS NOT NULL
+          AND mem.EndDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        ORDER BY mem.EndDate ASC, m.LastName ASC
+        LIMIT 5
+    ");
+    $upcoming_expirations = $stmt->fetchAll();
+} catch (Throwable $e) {
+    error_log('Dashboard expirations query failed: ' . $e->getMessage());
+    $expirations_error = true;
+}
 
 ?>
 
@@ -203,25 +217,33 @@ $upcoming_expirations = $stmt->fetchAll();
     <!-- Upcoming Expirations -->
     <div class="dashboard-card">
         <div class="card-header-flex">
-            <h2 class="card-title">Upcoming Expirations</h2>
+            <h2 class="card-title">Upcoming Expirations <small class="card-title-note">next 30 days</small></h2>
             <a href="memberships.php" class="see-all-link">See all</a>
         </div>
         
         <div class="expiration-list">
-            <?php if (count($upcoming_expirations) > 0): ?>
+            <?php if ($expirations_error): ?>
+                <p style="text-align: center; color: #e53e3e; padding: 20px 0;">We couldn't load expirations right now. Please refresh the page.</p>
+            <?php elseif (count($upcoming_expirations) > 0): ?>
                 <?php foreach ($upcoming_expirations as $expiring): ?>
+                <?php
+                    $exp_initials = strtoupper(mb_substr($expiring['FirstName'] ?? '', 0, 1) . mb_substr($expiring['LastName'] ?? '', 0, 1));
+                    $d = (int) $expiring['days_left'];
+                    $d_label = $d === 0 ? 'Today' : $d . ($d === 1 ? ' Day' : ' Days');
+                ?>
                 <div class="expiration-item">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($expiring['FirstName'] . ' ' . $expiring['LastName']); ?>&background=4fd1c5&color=fff" 
-                         alt="Avatar" class="member-avatar">
+                    <div class="member-avatar member-avatar-initials"><?php echo htmlspecialchars($exp_initials); ?></div>
                     <div class="member-info">
                         <div class="member-name"><?php echo htmlspecialchars($expiring['FirstName'] . ' ' . $expiring['LastName']); ?></div>
-                        <div class="member-plan">Plan: <?php echo htmlspecialchars($expiring['PlanName']); ?></div>
+                        <div class="member-plan">
+                            <?php echo htmlspecialchars($expiring['PlanName'] ?? 'No plan'); ?> &middot; ends <?php echo date('M j', strtotime($expiring['EndDate'])); ?>
+                        </div>
                     </div>
-                    <span class="days-badge"><?php echo $expiring['days_left']; ?> Days</span>
+                    <span class="days-badge <?php echo $d <= 7 ? '' : 'later'; ?>"><?php echo $d_label; ?></span>
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <p style="text-align: center; color: #718096; padding: 20px 0;">No upcoming expirations</p>
+                <p style="text-align: center; color: #718096; padding: 20px 0;">No memberships ending in the next 30 days</p>
             <?php endif; ?>
         </div>
     </div>
