@@ -13,6 +13,7 @@ if (session_status() == PHP_SESSION_NONE) {
     <link rel="stylesheet" href="assets/css/style/style.css">
     <link rel="stylesheet" href="assets/css/style/filter_styles.css">
     <link rel="stylesheet" href="assets/css/style/table_sort.css">
+    <link rel="stylesheet" href="assets/css/style/admin_refinements.css">
 </head>
 <body class="dashboard-page">
     <?php if (isset($_SESSION['staff_id'])): ?>

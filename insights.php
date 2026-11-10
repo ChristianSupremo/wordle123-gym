@@ -98,14 +98,14 @@ $avg_day = round(array_sum($days) / 14, 1);
     <div class="stat-value"><?php echo max($hours) > 0 ? date('g A', strtotime($busiest . ':00')) : '-'; ?></div></div>
 </div>
 
-<div class="content-grid">
-  <div class="dashboard-card">
+<div class="insights-grid">
+  <div class="dashboard-card insights-card">
     <div class="card-header-flex"><h2 class="card-title">Peak Hours (last 30 days)</h2></div>
-    <canvas id="hoursChart"></canvas>
+    <div class="insights-chart"><canvas id="hoursChart"></canvas></div>
   </div>
-  <div class="dashboard-card">
+  <div class="dashboard-card insights-card">
     <div class="card-header-flex"><h2 class="card-title">Daily Visits (last 14 days)</h2></div>
-    <canvas id="daysChart"></canvas>
+    <div class="insights-chart"><canvas id="daysChart"></canvas></div>
   </div>
 </div>
 
@@ -137,13 +137,13 @@ new Chart(document.getElementById('hoursChart'), {
   type: 'bar',
   data: { labels: <?php echo json_encode($hour_labels); ?>,
           datasets: [{ label: 'Check-ins', data: <?php echo json_encode(array_values($hours)); ?>, backgroundColor: '#4fd1c5' }] },
-  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
 });
 new Chart(document.getElementById('daysChart'), {
   type: 'line',
   data: { labels: <?php echo json_encode($day_labels); ?>,
           datasets: [{ label: 'Visits', data: <?php echo json_encode(array_values($days)); ?>, borderColor: '#63b3ed', backgroundColor: 'rgba(99,179,237,.15)', fill: true, tension: .3 }] },
-  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
 });
 </script>
 
