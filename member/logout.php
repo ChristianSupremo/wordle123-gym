@@ -6,7 +6,7 @@ if (empty($_SESSION['member_account_id'])) {
     exit();
 }
 
-unset($_SESSION['member_account_id'], $_SESSION['member_id'], $_SESSION['member_name'], $_SESSION['member_csrf_token']);
+member_clear_session();
 session_regenerate_id(true);
 header('Location: login.php');
 exit();

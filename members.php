@@ -136,6 +136,11 @@ include 'includes/header.php';
                                     onclick="createMemberInvitation(<?= (int) $m['MemberID'] ?>, <?= htmlspecialchars(json_encode($m['FirstName'] . ' ' . $m['LastName']), ENT_QUOTES, 'UTF-8') ?>)">
                                 <i class="bi bi-person-plus"></i>
                             </button>
+                            <button type="button" class="action-btn" title="Enable or disable member portal access"
+                                    aria-label="Manage member portal access"
+                                    onclick="manageMemberAccess(<?= (int) $m['MemberID'] ?>, <?= htmlspecialchars(json_encode($m['FirstName'] . ' ' . $m['LastName']), ENT_QUOTES, 'UTF-8') ?>)">
+                                <i class="bi bi-person-lock"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -225,6 +230,31 @@ async function createMemberInvitation(memberId, memberName) {
         document.getElementById('memberInviteExpiry').textContent='Expires: '+data.expires_at;
         result.hidden=false; message.textContent='An activation link has been created for '+data.member_name+'.';
     } catch(err) { message.textContent='The invitation could not be created.'; error.textContent=err.message; error.hidden=false; }
+}
+async function manageMemberAccess(memberId, memberName) {
+    const endpoint='controllers/member_account_status.php';
+    try {
+        const res=await fetch(endpoint+'?member_id='+encodeURIComponent(memberId),{credentials:'same-origin',cache:'no-store'});
+        const info=await res.json();
+        if(!res.ok||!info.success) throw new Error(info.message||'Could not load portal access.');
+        if(!info.has_account) { toast.error(memberName+' does not have a portal account yet. Use the invite button to create one.'); return; }
+        const disabling=info.status==='Active';
+        const ok=await confirm.show({
+            title: disabling ? 'Disable Portal Access' : 'Enable Portal Access',
+            message: disabling ? memberName+' will be signed out and unable to use the member portal.' : 'Allow '+memberName+' to sign in to the member portal again?',
+            confirmText: disabling ? 'Disable' : 'Enable',
+            cancelText: 'Cancel',
+            type: disabling ? 'warning' : 'info'
+        });
+        if(!ok) return;
+        const form=new FormData();
+        form.append('csrf_token',info.csrf_token); form.append('member_id',String(memberId));
+        form.append('status', disabling ? 'Disabled' : 'Active');
+        const r2=await fetch(endpoint,{method:'POST',body:form,credentials:'same-origin'});
+        const d=await r2.json();
+        if(!r2.ok||!d.success) throw new Error(d.message||'Could not update portal access.');
+        toast.success(d.message);
+    } catch(err) { toast.error(err.message); }
 }
 async function copyMemberInviteLink() {
     const input=document.getElementById('memberInviteLink');

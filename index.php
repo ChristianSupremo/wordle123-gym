@@ -30,6 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['staff_id'] = $staff['StaffID'];
         $_SESSION['staff_name'] = $staff['FirstName'] . ' ' . $staff['LastName'];
         $_SESSION['role_id'] = $staff['RoleID'];
+        unset($_SESSION['member_account_id'], $_SESSION['member_id'], $_SESSION['member_name'], $_SESSION['member_csrf_token']);
 
         // Set success status for toast
         $login_status = 'success';

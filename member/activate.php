@@ -89,45 +89,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $member) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex,nofollow">
     <title>Activate Member Account | NEWYOU</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../assets/css/style/style.css">
-    <style>
-        .activate-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f6f8}
-        .activate-card{width:min(100%,460px);background:#fff;border-radius:18px;padding:36px;box-shadow:0 18px 50px rgba(15,23,42,.09)}
-        .activate-card h1{margin:0 0 8px;color:#17202b}.activate-card p{color:#64748b}
-        .activate-card label{display:block;margin:18px 0 7px;font-weight:600}
-        .activate-card input{width:100%;box-sizing:border-box;padding:13px;border:1px solid #dbe2ea;border-radius:9px}
-        .activate-card button,.activate-card .activate-link{display:block;text-align:center;width:100%;box-sizing:border-box;margin-top:22px;padding:14px;border:0;border-radius:9px;background:#152b36;color:white;font-weight:700;text-decoration:none;cursor:pointer}
-        .activate-error{padding:12px;border-radius:8px;background:#fff1f2;color:#be123c}
-    </style>
+    <link rel="stylesheet" href="../assets/css/style/payment_modals.css">
 </head>
-<body>
-<div class="activate-wrap"><main class="activate-card">
-    <h1><?= $success ? 'Account activated' : 'Activate your account' ?></h1>
-    <?php if ($success): ?>
-        <p>Your NEWYOU member account is ready. You can now sign in.</p>
-        <a class="activate-link" href="login.php">Continue to member sign in</a>
-    <?php else: ?>
-        <?php if ($error !== ''): ?><div class="activate-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-        <?php if ($member): ?>
-            <p>Welcome, <?= htmlspecialchars($member['FirstName'] . ' ' . $member['LastName'], ENT_QUOTES, 'UTF-8') ?>. Create a password to activate your account.</p>
-            <form method="post" action="activate.php">
-                <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(member_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-                <label for="password">Password (at least 10 characters)</label>
-                <input id="password" name="password" type="password" minlength="10" autocomplete="new-password" required>
-                <label for="confirm_password">Confirm password</label>
-                <input id="confirm_password" name="confirm_password" type="password" minlength="10" autocomplete="new-password" required>
-                <button type="submit">Create member account</button>
-            </form>
-        <?php else: ?>
-            <p>Please contact gym staff and request a new account invitation.</p>
-            <a class="activate-link" href="login.php">Member sign in</a>
-        <?php endif; ?>
-    <?php endif; ?>
-</main></div>
+<body class="login-page">
+    <div class="login-container">
+        <section class="left-section" aria-label="NEWYOU member portal">
+            <div class="login-brand-mark">
+                <img src="../assets/css/style/logo.png" alt="NEWYOU">
+            </div>
+            <div class="login-hero-copy">
+                <p class="login-eyebrow">NEWYOU MEMBER PORTAL</p>
+                <h2>Welcome to<br><span>your account.</span></h2>
+                <p class="login-hero-description">Set a password to start tracking your membership.</p>
+                <div class="login-feature-list" aria-label="Portal features">
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-card-checklist"></i></span><span>Membership</span></div>
+                    <span class="login-feature-divider" aria-hidden="true"></span>
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-calendar2-check"></i></span><span>Attendance</span></div>
+                    <span class="login-feature-divider" aria-hidden="true"></span>
+                    <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-credit-card"></i></span><span>Payments</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="right-section" aria-label="Activate account">
+            <div class="login-form">
+                <div class="logo">
+                    <img src="../assets/css/style/logo.png" class="logo-icon" alt="NEWYOU">
+                </div>
+
+                <?php if ($success): ?>
+                    <h1>Account activated</h1>
+                    <p class="subtitle">Your NEWYOU member account is ready.</p>
+                    <a class="sign-in-btn" href="login.php?activated=1" style="display:block;text-align:center;text-decoration:none;">Continue to sign in <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                <?php elseif ($member): ?>
+                    <h1>Activate your account</h1>
+                    <p class="subtitle">Welcome, <?= htmlspecialchars($member['FirstName'] . ' ' . $member['LastName'], ENT_QUOTES, 'UTF-8') ?>. Create a password to continue.</p>
+                    <form method="post" action="activate.php" id="activateForm">
+                        <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(member_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="form-group">
+                            <label for="password">Password (at least 10 characters)</label>
+                            <div class="password-input-wrapper">
+                                <i class="bi bi-lock login-password-icon" aria-hidden="true"></i>
+                                <input type="password" id="password" name="password" placeholder="Create a password" minlength="10" autocomplete="new-password" required>
+                            </div>
+                            <small id="caps_warning_login" style="color:#e53e3e; display:none; font-size:13px; margin-top:5px;">⚠ Caps Lock is ON</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm password</label>
+                            <div class="password-input-wrapper">
+                                <i class="bi bi-lock login-password-icon" aria-hidden="true"></i>
+                                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" minlength="10" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="sign-in-btn">Create member account <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+                    </form>
+                <?php else: ?>
+                    <h1>Invitation unavailable</h1>
+                    <p class="subtitle">Please contact gym staff and request a new account invitation.</p>
+                    <a class="sign-in-btn" href="login.php" style="display:block;text-align:center;text-decoration:none;">Member sign in <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                <?php endif; ?>
+
+                <div class="login-secure-note"><span class="login-secure-rule"></span><i class="bi bi-shield-check" aria-hidden="true"></i><span>Secure member access.</span><span class="login-secure-rule"></span></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../assets/js/script.js"></script>
+    <script src="../assets/js/capslock_detector.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($error !== ''): ?>
+                if (typeof toast !== 'undefined' && toast.error) { toast.error(<?= json_encode($error) ?>); }
+            <?php endif; ?>
+        });
+        setTimeout(() => { enableCapsLockWarning("password", "caps_warning_login"); }, 100);
+    </script>
 </body>
 </html>
