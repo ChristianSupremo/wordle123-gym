@@ -64,6 +64,11 @@ if (session_status() == PHP_SESSION_NONE) {
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="payment_review.php" data-tooltip="Payment Approval" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'payment_review.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-clipboard-check"></i><span>Payment Approval</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="plans.php" data-tooltip="Plans" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
                         <i class="bi bi-tag"></i><span>Manage Plans</span>
                     </a>
