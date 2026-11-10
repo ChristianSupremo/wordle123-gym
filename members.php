@@ -131,6 +131,11 @@ include 'includes/header.php';
                                title="View QR card" aria-label="View QR card for <?= htmlspecialchars($m['FirstName'] . ' ' . $m['LastName'], ENT_QUOTES, 'UTF-8') ?>">
                                 <i class="bi bi-qr-code"></i>
                             </a>
+                            <button type="button" class="action-btn" title="Create member portal invitation"
+                                    aria-label="Create member portal invitation"
+                                    onclick="createMemberInvitation(<?= (int) $m['MemberID'] ?>, <?= htmlspecialchars(json_encode($m['FirstName'] . ' ' . $m['LastName']), ENT_QUOTES, 'UTF-8') ?>)">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
