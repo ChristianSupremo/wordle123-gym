@@ -119,6 +119,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <button type="submit" class="sign-in-btn">Sign in <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
                 </form>
+                <p class="member-portal-entry" style="text-align:center;margin-top:18px;color:#64748b;font-size:13px;">
+                    Gym member? <a href="member/login.php" style="color:#0f766e;font-weight:600;">Sign in to your member portal</a>
+                </p>
                 <div class="login-secure-note"><span class="login-secure-rule"></span><i class="bi bi-shield-check" aria-hidden="true"></i><span>Secure access for your team.</span><span class="login-secure-rule"></span></div>
             </div>
         </div>
