@@ -6,15 +6,22 @@ check_login();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+if (empty($_SESSION['member_invite_csrf'])) {
+    $_SESSION['member_invite_csrf'] = bin2hex(random_bytes(32));
+}
+
+// Authenticated staff can retrieve a CSRF token before submitting an invitation.
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    echo json_encode(['success' => true, 'csrf_token' => $_SESSION['member_invite_csrf']]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
     exit;
 }
 
-if (empty($_SESSION['member_invite_csrf'])) {
-    $_SESSION['member_invite_csrf'] = bin2hex(random_bytes(32));
-}
 $csrf = $_POST['csrf_token'] ?? '';
 if (!is_string($csrf) || !hash_equals($_SESSION['member_invite_csrf'], $csrf)) {
     http_response_code(403);
