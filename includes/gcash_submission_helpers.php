@@ -17,7 +17,7 @@ function gcash_private_upload_dir(): string
     $configured = getenv('NEWYOU_PRIVATE_UPLOAD_DIR');
     $directory = $configured
         ? rtrim($configured, DIRECTORY_SEPARATOR)
-        : dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'newyou_private' . DIRECTORY_SEPARATOR . 'gcash_proofs';
+        : dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'newyou_private' . DIRECTORY_SEPARATOR . 'gcash_proofs';
 
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
         throw new RuntimeException('The private proof upload directory is unavailable. Please contact the gym.');
