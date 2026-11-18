@@ -115,45 +115,83 @@ $stmt = $pdo->query(
      ORDER BY sub.SubmittedAt ASC, sub.SubmissionID ASC"
 );
 $pending = $stmt->fetchAll();
+$pendingTotal = array_sum(array_map(static fn($row) => (float) $row['AmountPaid'], $pending));
 
 include __DIR__ . '/includes/header.php';
 ?>
 <div class="page-header">
-    <h1 class="page-title">GCash Payment Review</h1>
+    <div>
+        <h1 class="page-title">GCash Payment Review</h1>
+        <p class="gcash-subtitle">Check each member's GCash proof, then approve it to record the payment or reject it with a reason.</p>
+    </div>
 </div>
+
+<div class="stats-grid">
+    <div class="stat-card gcash-stat">
+        <span class="gcash-stat-icon" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
+        <div>
+            <div class="stat-label">Pending submissions</div>
+            <div class="stat-value"><?= count($pending) ?></div>
+        </div>
+    </div>
+    <div class="stat-card gcash-stat">
+        <span class="gcash-stat-icon" aria-hidden="true"><i class="bi bi-cash-stack"></i></span>
+        <div>
+            <div class="stat-label">Total amount awaiting review</div>
+            <div class="stat-value">₱<?= number_format($pendingTotal, 2) ?></div>
+        </div>
+    </div>
+</div>
+
 <div class="dashboard-card">
     <div class="card-header-flex">
-        <h2 class="card-title">Pending submissions</h2>
+        <h2 class="card-title">Pending submissions <span class="card-title-note">Oldest first</span></h2>
         <span class="status-badge pending"><?= count($pending) ?> pending</span>
     </div>
     <?php if ($pending): ?>
-        <?php foreach ($pending as $item): ?>
-            <section style="border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin:16px 0;">
-                <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;">
-                    <div>
+        <div class="gcash-list">
+        <?php foreach ($pending as $item):
+            $sid = (int) $item['SubmissionID'];
+            $initials = strtoupper(implode('', array_map(static fn($w) => mb_substr($w, 0, 1), array_slice(preg_split('/\s+/', trim($item['MemberName'])), 0, 2))));
+        ?>
+            <article class="gcash-item">
+                <header class="gcash-item-head">
+                    <div class="member-avatar member-avatar-initials" aria-hidden="true"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="gcash-item-who">
                         <h3><?= htmlspecialchars($item['MemberName'], ENT_QUOTES, 'UTF-8') ?></h3>
-                        <p><strong>Membership:</strong> <?= htmlspecialchars($item['PlanName'] ?? 'Membership', ENT_QUOTES, 'UTF-8') ?> (#<?= (int) $item['MembershipID'] ?>)</p>
-                        <p><strong>Member ID:</strong> <?= (int) $item['MemberID'] ?></p>
-                        <p><strong>Amount:</strong> ₱<?= number_format((float) $item['AmountPaid'], 2) ?></p>
-                        <p><strong>GCash reference:</strong> <?= htmlspecialchars($item['ReferenceNumber'], ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><strong>Submitted:</strong> <?= htmlspecialchars(date('M d, Y g:i A', strtotime($item['SubmittedAt'])), ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><a href="gcash_proof.php?id=<?= (int) $item['SubmissionID'] ?>" target="_blank" rel="noopener">View proof image</a></p>
+                        <span>Member #<?= (int) $item['MemberID'] ?> · Submitted <?= htmlspecialchars(date('M d, Y g:i A', strtotime($item['SubmittedAt'])), ENT_QUOTES, 'UTF-8') ?></span>
                     </div>
-                    <form method="POST" action="gcash_submissions.php" style="min-width:260px;max-width:420px;flex:1;">
+                    <span class="payment-method-badge"><i class="bi bi-phone"></i> GCash</span>
+                </header>
+
+                <div class="gcash-item-body">
+                    <dl class="gcash-details">
+                        <div><dt>Amount</dt><dd class="gcash-amount">₱<?= number_format((float) $item['AmountPaid'], 2) ?></dd></div>
+                        <div><dt>Reference #</dt><dd class="gcash-ref"><?= htmlspecialchars($item['ReferenceNumber'], ENT_QUOTES, 'UTF-8') ?></dd></div>
+                        <div><dt>Membership</dt><dd><?= htmlspecialchars($item['PlanName'] ?? 'Membership', ENT_QUOTES, 'UTF-8') ?> <span class="gcash-muted">#<?= (int) $item['MembershipID'] ?></span></dd></div>
+                        <div><dt>Proof of payment</dt><dd><a class="gcash-proof-link" href="gcash_proof.php?id=<?= $sid ?>" target="_blank" rel="noopener"><i class="bi bi-image"></i> View proof image <i class="bi bi-box-arrow-up-right"></i></a></dd></div>
+                    </dl>
+
+                    <form class="gcash-review" method="POST" action="gcash_submissions.php">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="submission_id" value="<?= (int) $item['SubmissionID'] ?>">
-                        <label class="form-label-modern" for="remarks_<?= (int) $item['SubmissionID'] ?>">Staff remarks / rejection reason</label>
-                        <textarea class="form-control-modern" id="remarks_<?= (int) $item['SubmissionID'] ?>" name="remarks" rows="3" maxlength="2000" placeholder="Add a note for the member"></textarea>
-                        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn-primary-modern" type="submit" name="decision" value="approve" onclick="return confirm('Approve this submission and create one completed GCash payment record?')">Approve payment</button>
-                            <button class="btn-secondary-modern" type="submit" name="decision" value="reject" onclick="return confirm('Reject this submission? A reason is required.')">Reject</button>
+                        <input type="hidden" name="submission_id" value="<?= $sid ?>">
+                        <label class="form-label-modern" for="remarks_<?= $sid ?>">Staff remarks <span class="gcash-muted">(required to reject)</span></label>
+                        <textarea class="form-control-modern" id="remarks_<?= $sid ?>" name="remarks" rows="3" maxlength="2000" placeholder="Add a note for the member"></textarea>
+                        <div class="gcash-actions">
+                            <button class="btn-secondary-modern gcash-reject" type="submit" name="decision" value="reject" onclick="return confirm('Reject this submission? A reason is required.')"><i class="bi bi-x-circle"></i> Reject</button>
+                            <button class="btn-primary-modern" type="submit" name="decision" value="approve" onclick="return confirm('Approve this submission and create one completed GCash payment record?')"><i class="bi bi-check-circle"></i> Approve payment</button>
                         </div>
                     </form>
                 </div>
-            </section>
+            </article>
         <?php endforeach; ?>
+        </div>
     <?php else: ?>
-        <p style="padding:24px;color:#718096;">There are no pending GCash submissions.</p>
+        <div class="gcash-empty">
+            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+            <p><strong>All caught up</strong></p>
+            <p>There are no pending GCash submissions.</p>
+        </div>
     <?php endif; ?>
 </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>
