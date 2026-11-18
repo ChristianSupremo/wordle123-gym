@@ -100,3 +100,26 @@
 .pw-hint.ok { color: var(--success-color); }
 .pw-hint.bad { color: var(--danger-color); }
 .profile-pw-submit { width: 100%; justify-content: center; margin-top: 4px; }
+
+/* ---------- Payments: GCash submission ---------- */
+.mp-pay-grid { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.mp-pay-panel { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
+.mp-pay-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.mp-pay-heading i { color: var(--accent-color); font-size: 18px; }
+.mp-pay-recipient { display: grid; gap: 12px; margin: 0; }
+.mp-pay-recipient dt { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin: 0 0 2px; }
+.mp-pay-recipient dd { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); word-break: break-word; }
+.mp-pay-recipient .mp-pay-number { font-size: 22px; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+.mp-pay-instructions { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--border-color); font-size: 13.5px; color: var(--text-secondary); }
+.mp-pay-steps { margin: 12px 0 0; padding-left: 20px; font-size: 13.5px; color: var(--text-primary); }
+.mp-pay-steps li { margin: 6px 0; }
+.mp-pay-steps li::marker { color: var(--accent-color); font-weight: 700; }
+.mp-pay-form .form-group-modern { margin: 0; }
+.mp-hint { display: block; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.mp-pay-note { margin: 20px 0 0; align-items: flex-start; }
+.mp-ref { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
+.mp-review { min-width: 200px; }
+.mp-review small { color: var(--text-secondary); }
+.mp-remarks { margin-top: 4px; font-size: 13px; color: var(--text-primary); }
+@media (max-width: 900px) { .mp-pay-grid { grid-template-columns: 1fr; } }
+@media (max-width: 576px) { .mp-form-actions .btn-primary-modern { width: 100%; justify-content: center; } }

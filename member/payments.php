@@ -118,11 +118,17 @@ $submissionStmt = $pdo->prepare(
 $submissionStmt->execute([$memberId]);
 $submissions = $submissionStmt->fetchAll();
 
+$pendingCount = count(array_filter($submissions, static fn($row) => $row['Status'] === 'Pending'));
+$submissionBadge = ['Approved' => 'completed', 'Rejected' => 'failed', 'Pending' => 'pending'];
+
 include __DIR__ . '/includes/member_header.php';
 ?>
 
 <div class="page-header">
-    <h1 class="page-title">Payments</h1>
+    <div>
+        <h1 class="page-title">Payments</h1>
+        <p class="mp-subtitle">Send your membership payment through GCash and track its review.</p>
+    </div>
 </div>
 
 <?php if ($errorMessage): ?>
@@ -138,108 +144,129 @@ include __DIR__ . '/includes/member_header.php';
         <div class="stat-label">Completed Payments</div>
         <div class="stat-value"><?= count($payments) ?></div>
     </div>
-</div>
-
-<div class="dashboard-card" style="margin-bottom:24px;">
-    <div class="card-header-flex"><h2 class="card-title">Submit GCash Payment</h2></div>
-    <p class="mp-subtitle">Pay the gym through GCash, then send your reference number and proof for manual staff review. Your submission stays pending until staff reviews it.</p>
-
-    <?php if ($settingsConfigured): ?>
-        <div class="mp-info-list" style="margin:16px 0;">
-            <div><dt>Recipient</dt><dd><?= member_h($settings['RecipientName']) ?></dd></div>
-            <div><dt>GCash number</dt><dd><?= member_h($settings['MobileNumber']) ?></dd></div>
-            <div><dt>Instructions</dt><dd><?= nl2br(member_h($settings['Instructions'] ?? 'Send the exact amount, then upload a clear screenshot of your receipt.')) ?></dd></div>
-        </div>
-    <?php else: ?>
-        <div class="alert alert-warning">GCash recipient details have not been configured. Please contact the gym before sending money.</div>
-    <?php endif; ?>
-
-    <?php if ($eligibleMemberships && $settingsConfigured): ?>
-        <form method="POST" action="payments.php" enctype="multipart/form-data" class="mp-stack" style="max-width:680px;">
-            <input type="hidden" name="csrf_token" value="<?= member_h(member_csrf_token()) ?>">
-            <div class="form-group-modern">
-                <label class="form-label-modern" for="membership_id">Membership / plan</label>
-                <select class="form-control-modern" id="membership_id" name="membership_id" required>
-                    <option value="">Choose your membership</option>
-                    <?php foreach ($eligibleMemberships as $membership): ?>
-                        <option value="<?= (int) $membership['MembershipID'] ?>">
-                            <?= member_h(($membership['PlanName'] ?? 'Membership') . ' · ' . $membership['Status'] . ' · ₱' . number_format((float) $membership['Rate'], 2)) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group-modern">
-                <label class="form-label-modern" for="amount_paid">Amount paid (₱)</label>
-                <input class="form-control-modern" id="amount_paid" name="amount_paid" type="number" min="0.01" max="9999999.99" step="0.01" required>
-            </div>
-            <div class="form-group-modern">
-                <label class="form-label-modern" for="reference_number">GCash reference number</label>
-                <input class="form-control-modern" id="reference_number" name="reference_number" type="text" maxlength="100" required>
-            </div>
-            <div class="form-group-modern">
-                <label class="form-label-modern" for="proof">Proof of payment (JPG, PNG, or WebP; max 5 MB)</label>
-                <input class="form-control-modern" id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp" required>
-            </div>
-            <p class="mp-subtitle">Submitting a reference number or screenshot does not automatically verify payment. Do not submit again while the same membership has a pending review.</p>
-            <button class="btn-primary-modern" type="submit"><i class="bi bi-upload"></i> Submit for Review</button>
-        </form>
-    <?php elseif (!$eligibleMemberships): ?>
-        <p class="mp-empty">There are no eligible memberships available for payment submission. Please contact the front desk.</p>
-    <?php endif; ?>
-</div>
-
-<div class="dashboard-card" style="margin-bottom:24px;">
-    <div class="card-header-flex"><h2 class="card-title">GCash Submission Status</h2></div>
-    <div class="mp-table-wrap">
-        <table class="dashboard-table">
-            <thead><tr><th>Submitted</th><th>Membership</th><th>Reference</th><th>Amount</th><th>Status</th><th>Review details</th></tr></thead>
-            <tbody>
-            <?php if ($submissions): foreach ($submissions as $submission): ?>
-                <tr>
-                    <td><?= member_h(date('M d, Y g:i A', strtotime($submission['SubmittedAt']))) ?></td>
-                    <td><?= member_h($submission['PlanName'] ?? 'Membership') ?></td>
-                    <td><?= member_h($submission['ReferenceNumber']) ?></td>
-                    <td>₱<?= number_format((float) $submission['AmountPaid'], 2) ?></td>
-                    <td><span class="status-badge <?= strtolower($submission['Status']) ?>"><?= $submission['Status'] === 'Approved' ? 'Approved / Completed' : member_h($submission['Status']) ?></span></td>
-                    <td>
-                        <?php if ($submission['ReviewedAt']): ?>
-                            <small>Reviewed <?= member_h(date('M d, Y g:i A', strtotime($submission['ReviewedAt']))) ?><?= $submission['ReviewerName'] ? ' by ' . member_h($submission['ReviewerName']) : '' ?></small>
-                        <?php else: ?>
-                            <small>Awaiting staff review</small>
-                        <?php endif; ?>
-                        <?php if (!empty($submission['StaffRemarks'])): ?>
-                            <div><?= nl2br(member_h($submission['StaffRemarks'])) ?></div>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; else: ?>
-                <tr><td colspan="6" class="mp-empty">No GCash submissions yet.</td></tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
+    <div class="stat-card">
+        <div class="stat-label">Awaiting Review</div>
+        <div class="stat-value"><?= $pendingCount ?></div>
     </div>
 </div>
 
-<div class="dashboard-card">
-    <div class="card-header-flex"><h2 class="card-title">Payment History</h2></div>
-    <div class="mp-table-wrap">
-        <table class="dashboard-table">
-            <thead><tr><th>Date</th><th>Plan</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody>
-            <?php if ($payments): foreach ($payments as $p): ?>
-                <tr>
-                    <td><?= member_h(date('M d, Y', strtotime($p['PaymentDate']))) ?></td>
-                    <td><span class="plan-badge"><?= member_h($p['PlanName'] ?? '—') ?></span></td>
-                    <td><?= member_h($p['MethodName'] ?? '—') ?></td>
-                    <td><?= member_h($p['ReferenceNumber'] ?: '—') ?></td>
-                    <td>₱<?= number_format((float) $p['AmountPaid'], 2) ?></td>
-                    <td><span class="status-badge <?= strtolower($p['PaymentStatus']) ?>"><?= member_h($p['PaymentStatus']) ?></span></td>
-                </tr>
-            <?php endforeach; else: ?>
-                <tr><td colspan="6" class="mp-empty">No completed payment records found.</td></tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
+<div class="mp-stack">
+    <div class="dashboard-card">
+        <div class="card-header-flex"><h2 class="card-title">Submit GCash Payment</h2></div>
+
+        <?php if (!$settingsConfigured): ?>
+            <div class="mp-notice"><i class="bi bi-exclamation-triangle"></i> GCash recipient details have not been set up yet. Please contact the gym before sending money.</div>
+        <?php else: ?>
+            <div class="mp-pay-grid">
+                <section class="mp-pay-panel" aria-labelledby="gcash-send-to">
+                    <h3 id="gcash-send-to" class="mp-pay-heading"><i class="bi bi-phone"></i> Send payment to</h3>
+                    <dl class="mp-pay-recipient">
+                        <div><dt>GCash number</dt><dd class="mp-pay-number"><?= member_h($settings['MobileNumber']) ?></dd></div>
+                        <div><dt>Recipient name</dt><dd><?= member_h($settings['RecipientName']) ?></dd></div>
+                    </dl>
+                    <p class="mp-pay-instructions"><?= nl2br(member_h($settings['Instructions'] ?? 'Send the exact amount, then upload a clear screenshot of your receipt.')) ?></p>
+                    <ol class="mp-pay-steps">
+                        <li>Send the amount through the GCash app.</li>
+                        <li>Copy the reference number from your receipt.</li>
+                        <li>Fill in this form and upload a screenshot.</li>
+                        <li>Staff will review it and record your payment.</li>
+                    </ol>
+                </section>
+
+                <?php if ($eligibleMemberships): ?>
+                    <form method="POST" action="payments.php" enctype="multipart/form-data" class="mp-pay-form">
+                        <input type="hidden" name="csrf_token" value="<?= member_h(member_csrf_token()) ?>">
+                        <div class="mp-form-grid">
+                            <div class="form-group-modern full-width">
+                                <label class="form-label-modern" for="membership_id">Membership / plan</label>
+                                <select class="form-control-modern" id="membership_id" name="membership_id" required>
+                                    <option value="">Choose your membership</option>
+                                    <?php foreach ($eligibleMemberships as $membership): ?>
+                                        <option value="<?= (int) $membership['MembershipID'] ?>">
+                                            <?= member_h(($membership['PlanName'] ?? 'Membership') . ' · ' . $membership['Status'] . ' · ₱' . number_format((float) $membership['Rate'], 2)) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group-modern">
+                                <label class="form-label-modern" for="amount_paid">Amount paid (₱)</label>
+                                <input class="form-control-modern" id="amount_paid" name="amount_paid" type="number" min="0.01" max="9999999.99" step="0.01" inputmode="decimal" placeholder="0.00" required>
+                            </div>
+                            <div class="form-group-modern">
+                                <label class="form-label-modern" for="reference_number">GCash reference number</label>
+                                <input class="form-control-modern" id="reference_number" name="reference_number" type="text" maxlength="100" autocomplete="off" placeholder="e.g. 1234 567 890123" required>
+                            </div>
+                            <div class="form-group-modern full-width">
+                                <label class="form-label-modern" for="proof">Proof of payment</label>
+                                <input class="form-control-modern" id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="proof_hint" required>
+                                <small id="proof_hint" class="mp-hint">JPG, PNG or WebP, up to 5 MB.</small>
+                            </div>
+                        </div>
+                        <div class="mp-notice mp-pay-note"><i class="bi bi-info-circle"></i> Your payment is confirmed only after staff review. If a membership already has a submission waiting for review, don't submit again.</div>
+                        <div class="mp-form-actions">
+                            <button class="btn-primary-modern" type="submit"><i class="bi bi-upload"></i> Submit for Review</button>
+                        </div>
+                    </form>
+                <?php else: ?>
+                    <p class="mp-empty">There are no eligible memberships available for payment submission. Please contact the front desk.</p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="card-header-flex"><h2 class="card-title">GCash Submission Status</h2></div>
+        <div class="mp-table-wrap">
+            <table class="dashboard-table">
+                <thead><tr><th>Submitted</th><th>Membership</th><th>Reference</th><th>Amount</th><th>Status</th><th>Review details</th></tr></thead>
+                <tbody>
+                <?php if ($submissions): foreach ($submissions as $submission): ?>
+                    <tr>
+                        <td><?= member_h(date('M d, Y g:i A', strtotime($submission['SubmittedAt']))) ?></td>
+                        <td><span class="plan-badge"><?= member_h($submission['PlanName'] ?? 'Membership') ?></span></td>
+                        <td class="mp-ref"><?= member_h($submission['ReferenceNumber']) ?></td>
+                        <td><strong>₱<?= number_format((float) $submission['AmountPaid'], 2) ?></strong></td>
+                        <td><span class="status-badge <?= $submissionBadge[$submission['Status']] ?? 'pending' ?>"><?= member_h($submission['Status']) ?></span></td>
+                        <td class="mp-review">
+                            <?php if ($submission['ReviewedAt']): ?>
+                                <small>Reviewed <?= member_h(date('M d, Y g:i A', strtotime($submission['ReviewedAt']))) ?><?= $submission['ReviewerName'] ? ' by ' . member_h($submission['ReviewerName']) : '' ?></small>
+                            <?php else: ?>
+                                <small>Awaiting staff review</small>
+                            <?php endif; ?>
+                            <?php if (!empty($submission['StaffRemarks'])): ?>
+                                <div class="mp-remarks"><?= nl2br(member_h($submission['StaffRemarks'])) ?></div>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; else: ?>
+                    <tr><td colspan="6" class="mp-empty">No GCash submissions yet.</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="card-header-flex"><h2 class="card-title">Payment History</h2></div>
+        <div class="mp-table-wrap">
+            <table class="dashboard-table">
+                <thead><tr><th>Date</th><th>Plan</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                <?php if ($payments): foreach ($payments as $p): ?>
+                    <tr>
+                        <td><?= member_h(date('M d, Y', strtotime($p['PaymentDate']))) ?></td>
+                        <td><span class="plan-badge"><?= member_h($p['PlanName'] ?? '—') ?></span></td>
+                        <td><?= member_h($p['MethodName'] ?? '—') ?></td>
+                        <td class="mp-ref"><?= member_h($p['ReferenceNumber'] ?: '—') ?></td>
+                        <td><strong>₱<?= number_format((float) $p['AmountPaid'], 2) ?></strong></td>
+                        <td><span class="status-badge <?= strtolower($p['PaymentStatus']) ?>"><?= member_h($p['PaymentStatus']) ?></span></td>
+                    </tr>
+                <?php endforeach; else: ?>
+                    <tr><td colspan="6" class="mp-empty">No completed payment records found.</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
