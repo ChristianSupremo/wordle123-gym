@@ -206,3 +206,56 @@
     .att-head { align-items: flex-start; }
     .att-clock { width: 100%; }
 }
+
+/* ---------- GCash payment review ---------- */
+.gcash-subtitle { margin: 6px 0 0; color: var(--text-secondary); font-size: 14px; }
+.gcash-stat { display: flex; align-items: center; gap: 16px; }
+.gcash-stat .stat-value { font-size: 28px; }
+.gcash-stat-icon {
+    width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--accent-hover); background: var(--accent-light);
+}
+.dark-mode .gcash-stat-icon { background: rgba(79, 209, 197, .15); color: var(--accent-color); }
+
+.gcash-list { display: flex; flex-direction: column; gap: 16px; }
+.gcash-item { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+.gcash-item-head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+    background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);
+}
+.gcash-item-who { flex: 1; min-width: 0; }
+.gcash-item-who h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.gcash-item-who span { font-size: 12px; color: var(--text-secondary); }
+
+.gcash-item-body {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+    gap: 24px; padding: 18px;
+}
+.gcash-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; margin: 0; align-content: start; }
+.gcash-details dt { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+.gcash-details dd { margin: 0; font-size: 14px; color: var(--text-primary); overflow-wrap: anywhere; }
+.gcash-amount { font-size: 20px !important; font-weight: 700; }
+.gcash-ref { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 600; letter-spacing: .3px; }
+.gcash-muted { color: var(--text-secondary); font-weight: 400; }
+.gcash-proof-link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-hover); font-weight: 600; text-decoration: none; }
+.gcash-proof-link:hover { text-decoration: underline; }
+.dark-mode .gcash-proof-link { color: var(--accent-color); }
+
+.gcash-review .form-control-modern { width: 100%; resize: vertical; }
+.gcash-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.gcash-reject { color: var(--danger-color); }
+.gcash-reject:hover { background: var(--danger-light); border-color: var(--danger-color); }
+.dark-mode .gcash-reject:hover { background: rgba(229, 62, 62, .15); }
+
+.gcash-empty { text-align: center; padding: 40px 16px; color: var(--text-secondary); }
+.gcash-empty i { font-size: 36px; color: var(--success-color); }
+.gcash-empty p { margin: 6px 0 0; }
+.gcash-empty strong { color: var(--text-primary); }
+
+@media (max-width: 992px) { .gcash-item-body { grid-template-columns: 1fr; } }
+@media (max-width: 576px) {
+    .gcash-details { grid-template-columns: 1fr; }
+    .gcash-item-head { flex-wrap: wrap; }
+    .gcash-actions > button { flex: 1; justify-content: center; }
+}

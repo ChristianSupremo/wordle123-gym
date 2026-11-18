@@ -65,6 +65,11 @@ if (session_status() == PHP_SESSION_NONE) {
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="gcash_submissions.php" data-tooltip="GCash Review" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'gcash_submissions.php' ? 'active' : ''; ?>">
+                        <i class="bi bi-qr-code"></i><span>GCash Review</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="plans.php" data-tooltip="Plans" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
                         <i class="bi bi-tag"></i><span>Manage Plans</span>
                     </a>
