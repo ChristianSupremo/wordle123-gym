@@ -2,7 +2,7 @@
 // member_qr.php?id=12 - printable QR card for a member
 require_once 'config/db.php';
 require_once 'includes/functions.php';
-check_login();
+require_permission('members.view');
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id || $id < 1) {

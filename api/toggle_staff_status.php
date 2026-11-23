@@ -7,7 +7,7 @@
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 require_once '../includes/helpers/staff_modal_helpers.php';
-check_login();
+require_permission('staff.toggle_status');
 
 header('Content-Type: application/json');
 

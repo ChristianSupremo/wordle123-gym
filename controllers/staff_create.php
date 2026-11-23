@@ -6,7 +6,8 @@
 
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-check_login();
+require_permission('staff.create');
+require_permission('staff.assign_role');
 
 header('Content-Type: application/json');
 
@@ -31,6 +32,18 @@ try {
     // Validate required fields
     if (empty($first_name) || empty($last_name) || empty($email) || empty($username) || empty($password) || empty($role_id)) {
         echo json_encode(['success' => false, 'message' => 'All required fields must be filled']);
+        exit;
+    }
+
+    // Never trust the posted role/status: they must be real values
+    $stmt = $pdo->prepare("SELECT RoleID FROM Roles WHERE RoleID = ?");
+    $stmt->execute([$role_id]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'Invalid role selected']);
+        exit;
+    }
+    if (!in_array($status, ['Active', 'Inactive'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;
     }
 

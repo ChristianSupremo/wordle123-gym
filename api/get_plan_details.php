@@ -10,14 +10,7 @@ require_once '../includes/helpers/plan_modal_helpers.php';
 
 header('Content-Type: application/json');
 
-// Check if user is logged in
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-if (!isset($_SESSION['staff_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
-}
+require_permission('plans.view');
 
 $plan_id = $_GET['id'] ?? null;
 

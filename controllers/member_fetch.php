@@ -1,4 +1,9 @@
 <?php
+// Included by members.php only; refuse direct requests.
+if (!isset($pdo)) {
+    http_response_code(403);
+    exit();
+}
 if ($action === 'edit' && $member_id) {
     $stmt = $pdo->prepare("SELECT * FROM Member WHERE MemberID=?");
     $stmt->execute([$member_id]);

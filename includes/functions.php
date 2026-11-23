@@ -1,19 +1,59 @@
 <?php
 // includes/functions.php
 
+// Staff sessions end after this many seconds without a request.
+const SESSION_IDLE_TIMEOUT = 7200;
+
 // Start the session on every page that includes this file
 if (session_status() == PHP_SESSION_NONE) {
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? null) == 443;
+    ini_set('session.use_strict_mode', '1');                    // ignore session IDs the server never issued
+    ini_set('session.gc_maxlifetime', (string) SESSION_IDLE_TIMEOUT); // keep session files as long as the idle timeout
+    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => $is_https]); // Secure only on HTTPS so local http:// XAMPP keeps working
     session_start();
 }
 
+require_once __DIR__ . '/helpers/permission_helper.php';
+require_once __DIR__ . '/helpers/csrf_helper.php';
+
 /**
- * Checks if the user is logged in. If not, redirects to the login page.
+ * Authentication: requires a logged-in staff member whose account still exists
+ * and is Active and whose session has not been idle past SESSION_IDLE_TIMEOUT.
+ * Re-reads role/status from the DB on every request so deactivation and role
+ * changes apply to already-open sessions. Also rejects state-changing requests
+ * without a valid CSRF token (csrf_helper.php).
+ * Authorization (what they may do) is require_permission() in permission_helper.php.
  */
 function check_login() {
-    if (!isset($_SESSION['staff_id'])) {
-        header('Location: index.php');
+    $staff = isset($_SESSION['staff_id']) ? current_staff() : null;
+    $idle_expired = isset($_SESSION['last_activity']) && time() - (int) $_SESSION['last_activity'] > SESSION_IDLE_TIMEOUT;
+
+    if ($staff && $staff['Status'] === 'Active' && !$idle_expired) {
+        $_SESSION['last_activity'] = time();
+        $_SESSION['role_id'] = $staff['RoleID'];
+        $_SESSION['staff_name'] = $staff['FirstName'] . ' ' . $staff['LastName'];
+        require_csrf();
+        return;
+    }
+
+    if (isset($_SESSION['staff_id'])) {
+        // Idle too long, or account deactivated/deleted since login: end the session.
+        $_SESSION = [];
+        session_regenerate_id(true);
+        $_SESSION['logout_status'] = 'error';
+        $_SESSION['logout_message'] = $idle_expired && $staff && $staff['Status'] === 'Active'
+            ? 'Your session expired due to inactivity. Please log in again.'
+            : 'Your account is no longer active. Please contact an administrator.';
+    }
+
+    if (wants_json_response()) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Your session has expired. Please log in again.']);
         exit();
     }
+    header('Location: index.php');
+    exit();
 }
 
 /**

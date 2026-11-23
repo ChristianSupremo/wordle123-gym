@@ -10,14 +10,7 @@ require_once '../includes/helpers/staff_modal_helpers.php';
 
 header('Content-Type: application/json');
 
-// Check if user is logged in
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-if (!isset($_SESSION['staff_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
-}
+require_permission('staff.view');
 
 $staff_id = $_GET['id'] ?? null;
 
@@ -39,7 +32,7 @@ try {
     $stats = getStaffStats($pdo, $staff_id);
     
     // Get role permissions
-    $permissions = getRolePermissions($staff['AccessLevel']);
+    $permissions = getRolePermissions($staff['RoleName']);
     
     // Check if can be deactivated
     $deactivate_check = canDeactivateStaff($pdo, $staff_id);

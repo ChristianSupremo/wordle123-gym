@@ -223,9 +223,11 @@
                 <button type="button" class="btn-secondary-modern" onclick="StaffViewModal.close()">
                     Close
                 </button>
+                <?php if (has_permission('staff.edit')): ?>
                 <button type="button" class="btn-primary-modern" onclick="editStaffFromView()">
                     <i class="bi bi-pencil"></i> Edit Staff
                 </button>
+                <?php endif; ?>
             </div>
 
         </div>
@@ -307,7 +309,7 @@ function populateStaffView(staff, stats, permissions) {
     
     const roleBadge = document.getElementById('view_staff_role');
     roleBadge.textContent = staff.RoleName;
-    roleBadge.className = 'role-badge ' + getRoleBadgeClassName(staff.AccessLevel);
+    roleBadge.className = 'role-badge ' + getRoleBadgeClassName(staff.RoleName);
     
     // Stats
     document.getElementById('view_members_registered').textContent = stats.members_registered;
@@ -339,25 +341,25 @@ function populateStaffView(staff, stats, permissions) {
     permissionsList.innerHTML = '';
     permissions.forEach(permission => {
         const li = document.createElement('li');
-        li.style.cssText = 'padding: 10px 0; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px;';
+        li.style.cssText = 'padding: 10px 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;';
         const isAllowed = !permission.includes('Cannot');
         li.innerHTML = `
             <i class="bi bi-${isAllowed ? 'check-circle-fill' : 'x-circle-fill'}" 
                style="color: ${isAllowed ? '#48bb78' : '#f56565'}; font-size: 18px;"></i>
-            <span style="color: #2d3748; font-size: 14px;">${permission}</span>
+            <span style="color: var(--text-primary); font-size: 14px;">${permission}</span>
         `;
         permissionsList.appendChild(li);
     });
 }
 
 // Helper function to get role badge class
-function getRoleBadgeClassName(accessLevel) {
+function getRoleBadgeClassName(roleName) {
     const classes = {
-        3: 'role-admin',
-        2: 'role-manager',
-        1: 'role-receptionist'
+        Admin: 'role-admin',
+        Manager: 'role-manager',
+        Receptionist: 'role-receptionist'
     };
-    return classes[accessLevel] || 'role-default';
+    return classes[roleName] || 'role-default';
 }
 
 // Helper function to format dates

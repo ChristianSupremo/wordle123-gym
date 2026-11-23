@@ -1,9 +1,15 @@
 <?php
+// Included by members.php only; refuse direct requests.
+if (!isset($pdo)) {
+    http_response_code(403);
+    exit();
+}
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['action'] ?? '') !== 'create') {
     return;
 }
 
 $member_id = $_POST['member_id'] ?? null;
+require_permission($member_id ? 'members.edit' : 'members.create');
 $firstName = trim($_POST['FirstName']);
 $lastName  = trim($_POST['LastName']);
 $email     = trim($_POST['Email']);

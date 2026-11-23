@@ -195,7 +195,7 @@ async function editPayment(paymentId) {
         
     } catch (error) {
         showErrorState('edit-payment-loading', 'edit-payment-form', 'edit-payment-error');
-        if (window.toast) {
+        if (typeof toast !== 'undefined') { // script.js declares `const toast`, which is not a window property
             toast.error('Failed to load payment details. Please try again.', 5000);
         }
     }
@@ -233,7 +233,9 @@ document.addEventListener('DOMContentLoaded', function() {
     handleFormSubmit(
         'editPaymentForm',
         'savePaymentEditBtn',
-        'Payment updated successfully! Refreshing...'
+        'Payment updated successfully! Refreshing...',
+        'payments.php',
+        PaymentEditModal
     );
 });
 </script>

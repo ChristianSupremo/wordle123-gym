@@ -2,15 +2,21 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/table_sort_helper.php';
-check_login();
+require_permission('memberships.view');
 
 $action = $_GET['action'] ?? 'list';
 $membership_id = $_GET['id'] ?? null;
+if ($action === 'edit') {
+    require_permission('memberships.edit');
+} elseif ($action !== 'list') {
+    require_permission('memberships.create');
+}
 
 // --- Handle Form Submissions (for Add/Renew/Update) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $membership_id = $_POST['membership_id'] ?? null;
+    require_permission($membership_id ? 'memberships.edit' : 'memberships.create');
     $member_id = $_POST['MemberID'];
     $plan_id = $_POST['PlanID'];
     $start_date = $_POST['StartDate'];
@@ -390,9 +396,11 @@ if ($action === 'list') {
                                 <button class="action-btn view-btn" onclick="viewMembershipDetails(<?= $m['MembershipID'] ?>)" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                <?php if (has_permission('memberships.edit')): ?>
                                 <button class="action-btn" onclick="editMembership(<?= $m['MembershipID'] ?>)">
                                     <i class="bi bi-pencil"></i> Edit
                                 </button>
+                                <?php endif; ?>
                                 <button class="action-btn" onclick="renewMembership(<?= $m['MembershipID'] ?>)">
                                     <i class="bi bi-arrow-repeat"></i> Renew
                                 </button>

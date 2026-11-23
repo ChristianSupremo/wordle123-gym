@@ -147,9 +147,11 @@
                 <button type="button" class="btn-secondary-modern" onclick="PlanViewModal.close()">
                     Close
                 </button>
+                <?php if (has_permission('plans.manage')): ?>
                 <button type="button" class="btn-primary-modern" onclick="editPlanFromView()">
                     <i class="bi bi-pencil"></i> Edit Plan
                 </button>
+                <?php endif; ?>
             </div>
 
         </div>

@@ -141,36 +141,43 @@ function getStaffStats($pdo, $staff_id) {
 }
 
 /**
- * Get role permissions description
+ * "Can ..." / "Cannot ..." permission lines for a role (from permission_helper.php)
  */
-function getRolePermissions($access_level) {
-    $permissions = [
-        3 => [ // Admin
-            'Can manage all staff',
-            'Can manage roles and permissions',
-            'Can manage all members',
-            'Can manage all memberships',
-            'Can manage all payments',
-            'Can view all reports',
-            'Can manage system settings'
-        ],
-        2 => [ // Manager
-            'Can manage members',
-            'Can manage memberships',
-            'Can manage payments',
-            'Can view reports',
-            'Cannot manage staff or roles'
-        ],
-        1 => [ // Receptionist
-            'Can register members',
-            'Can create memberships',
-            'Can record payments',
-            'Cannot manage staff',
-            'Cannot access system settings'
-        ]
-    ];
-    
-    return $permissions[$access_level] ?? [];
+function getRolePermissions($role_name) {
+    return describe_role_permissions($role_name);
+}
+
+/**
+ * True if changing this staff member to $new_role_id / $new_status would leave
+ * no active Admin. Pass the current values for anything that is not changing.
+ */
+function wouldRemoveLastAdmin($pdo, $staff_id, $new_role_id, $new_status) {
+    $stmt = $pdo->prepare("
+        SELECT r.RoleName, s.Status
+        FROM Staff s
+        LEFT JOIN Roles r ON s.RoleID = r.RoleID
+        WHERE s.StaffID = ?
+    ");
+    $stmt->execute([$staff_id]);
+    $target = $stmt->fetch();
+    if (!$target || $target['RoleName'] !== ADMIN_ROLE_NAME || $target['Status'] !== 'Active') {
+        return false; // not currently an active admin
+    }
+
+    $stmt = $pdo->prepare("SELECT RoleName FROM Roles WHERE RoleID = ?");
+    $stmt->execute([$new_role_id]);
+    if ($stmt->fetchColumn() === ADMIN_ROLE_NAME && $new_status === 'Active') {
+        return false; // stays an active admin
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM Staff s
+        JOIN Roles r ON s.RoleID = r.RoleID
+        WHERE r.RoleName = ? AND s.Status = 'Active'
+    ");
+    $stmt->execute([ADMIN_ROLE_NAME]);
+    return (int) $stmt->fetchColumn() <= 1;
 }
 
 /**
@@ -181,33 +188,14 @@ function canDeactivateStaff($pdo, $staff_id) {
     if ($staff_id == $_SESSION['staff_id']) {
         return ['can_deactivate' => false, 'reason' => 'You cannot deactivate your own account'];
     }
-    
-    // Check if this is the last active admin
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as admin_count
-        FROM Staff s
-        JOIN Roles r ON s.RoleID = r.RoleID
-        WHERE r.AccessLevel = 3 AND s.Status = 'Active'
-    ");
-    $stmt->execute();
-    $admin_count = $stmt->fetch()['admin_count'];
-    
-    if ($admin_count <= 1) {
-        // Check if this staff is an admin
-        $stmt = $pdo->prepare("
-            SELECT r.AccessLevel
-            FROM Staff s
-            JOIN Roles r ON s.RoleID = r.RoleID
-            WHERE s.StaffID = ?
-        ");
-        $stmt->execute([$staff_id]);
-        $staff = $stmt->fetch();
-        
-        if ($staff && $staff['AccessLevel'] == 3) {
-            return ['can_deactivate' => false, 'reason' => 'Cannot deactivate the last active admin'];
-        }
+
+    $stmt = $pdo->prepare("SELECT RoleID FROM Staff WHERE StaffID = ?");
+    $stmt->execute([$staff_id]);
+    $role_id = $stmt->fetchColumn();
+    if ($role_id !== false && wouldRemoveLastAdmin($pdo, $staff_id, $role_id, 'Inactive')) {
+        return ['can_deactivate' => false, 'reason' => 'Cannot deactivate the last active admin'];
     }
-    
+
     return ['can_deactivate' => true, 'reason' => ''];
 }
 
@@ -237,13 +225,13 @@ function formatLastLogin($last_login) {
 /**
  * Get role badge class
  */
-function getRoleBadgeClass($access_level) {
+function getRoleBadgeClass($role_name) {
     $classes = [
-        3 => 'role-admin',
-        2 => 'role-manager',
-        1 => 'role-receptionist'
+        'Admin' => 'role-admin',
+        'Manager' => 'role-manager',
+        'Receptionist' => 'role-receptionist'
     ];
-    return $classes[$access_level] ?? 'role-default';
+    return $classes[$role_name] ?? 'role-default';
 }
 
 /**

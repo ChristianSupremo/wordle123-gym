@@ -3,7 +3,7 @@ require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/payment_modal_helpers.php';
 require_once 'includes/helpers/table_sort_helper.php'; // Add this line
-check_login();
+require_permission('payments.view');
 
  $action = $_GET['action'] ?? 'list';
  $payment_id = $_GET['id'] ?? null;
@@ -11,24 +11,51 @@ check_login();
 // --- Handle Form Submissions ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     header('Content-Type: application/json');
+    require_permission(!empty($_POST['payment_id']) ? 'payments.edit' : 'payments.create');
+
+    // Response contract (add + edit modals): HTTP 200 {"success":true,"message"} on success,
+    // otherwise a 4xx/500 status with {"success":false,"message":"<reason to show the user>"}.
+    $fail = function ($status, $message) {
+        http_response_code($status);
+        echo json_encode(['success' => false, 'message' => $message]);
+        exit();
+    };
 
     try {
         $payment_id = $_POST['payment_id'] ?? null;
-        $membership_id = $_POST['MembershipID'];
-        $payment_method_id = $_POST['PaymentMethod'];
-        $amount_paid = $_POST['AmountPaid'];
+        $membership_id = $_POST['MembershipID'] ?? null;
+        $payment_method_id = $_POST['PaymentMethod'] ?? null;
+        $amount_paid = $_POST['AmountPaid'] ?? null;
         $reference_number = $_POST['ReferenceNumber'] ?? null;
         $remarks = $_POST['Remarks'] ?? null;
         $payment_status = $_POST['PaymentStatus'] ?? 'Completed';
         $staff_id = $_SESSION['staff_id'];
 
+        if (!is_numeric($amount_paid) || (float) $amount_paid <= 0) {
+            $fail(422, 'Enter an amount greater than zero.');
+        }
+        if (!in_array($payment_status, ['Pending', 'Completed', 'Failed', 'Refunded'], true)) {
+            $fail(422, 'Choose a valid payment status.');
+        }
+        $stmt = $pdo->prepare("SELECT 1 FROM PaymentMethods WHERE PaymentMethodID = ?");
+        $stmt->execute([$payment_method_id]);
+        if (!$stmt->fetchColumn()) {
+            $fail(422, 'Choose a valid payment method.');
+        }
+
         if ($payment_id) {
-            // UPDATE
-            $sql = "UPDATE Payment 
-                    SET PaymentMethodID=?, AmountPaid=?, ReferenceNumber=?, Remarks=?, PaymentStatus=? 
+            // UPDATE (idempotent: resubmitting the same edit sets the same values on the same row)
+            $stmt = $pdo->prepare("SELECT 1 FROM Payment WHERE PaymentID = ?");
+            $stmt->execute([$payment_id]);
+            if (!$stmt->fetchColumn()) {
+                $fail(404, 'This payment no longer exists. Refresh the page.');
+            }
+
+            $sql = "UPDATE Payment
+                    SET PaymentMethodID=?, AmountPaid=?, ReferenceNumber=?, Remarks=?, PaymentStatus=?
                     WHERE PaymentID=?";
             $stmt = $pdo->prepare($sql);
-            $success = $stmt->execute([
+            $stmt->execute([
                 $payment_method_id,
                 $amount_paid,
                 $reference_number,
@@ -37,18 +64,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $payment_id
             ]);
 
-            echo json_encode([
-                'success' => $success,
-                'message' => $success ? "Payment updated successfully" : "Failed to update payment"
-            ]);
+            echo json_encode(['success' => true, 'message' => 'Payment updated successfully']);
         } else {
             // INSERT
-            $sql = "INSERT INTO Payment 
+            $stmt = $pdo->prepare("SELECT 1 FROM Membership WHERE MembershipID = ?");
+            $stmt->execute([$membership_id]);
+            if (!$stmt->fetchColumn()) {
+                $fail(422, 'Choose a valid membership.');
+            }
+
+            $sql = "INSERT INTO Payment
                     (MembershipID, PaymentMethodID, StaffID, AmountPaid, ReferenceNumber, Remarks, PaymentStatus, PaymentDate)
                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
 
             $stmt = $pdo->prepare($sql);
-            $success = $stmt->execute([
+            $stmt->execute([
                 $membership_id,
                 $payment_method_id,
                 $staff_id,
@@ -58,16 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $payment_status
             ]);
 
-            echo json_encode([
-                'success' => $success,
-                'message' => $success ? "Payment recorded successfully" : "Failed to record payment"
-            ]);
+            echo json_encode(['success' => true, 'message' => 'Payment recorded successfully']);
         }
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'message' => "Error: " . $e->getMessage()
-        ]);
+        error_log('payments.php save failed: ' . $e->getMessage());
+        $fail(500, 'The payment could not be saved. Please try again.');
     }
 
     exit();
@@ -333,9 +358,11 @@ if ($action === 'list') {
                                     <button class="action-btn" onclick="viewPaymentDetails(<?= $p['PaymentID'] ?>)" title="View Details">
                                         <i class="bi bi-eye"></i>
                                     </button>
+                                    <?php if (has_permission('payments.edit')): ?>
                                     <button class="action-btn" onclick="editPayment(<?= $p['PaymentID'] ?>)" title="Edit Payment">
                                         <i class="bi bi-pencil"></i>
                                     </button>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <button class="action-btn" onclick="openAddPaymentModalForMembership(<?= $p['MembershipID'] ?>)" title="Record Payment">
                                         <i class="bi bi-plus-lg"></i>

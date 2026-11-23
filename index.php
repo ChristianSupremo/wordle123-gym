@@ -11,9 +11,13 @@ if (isset($_SESSION['staff_id'])) {
 $login_status = '';
 $login_message = '';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !verify_csrf_request()) {
+    // Login CSRF: the form must come from this site in this browser session
+    $login_status = 'error';
+    $login_message = 'Your login page expired. Please try again.';
+} elseif ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = (string) ($_POST['username'] ?? '');
+    $password = (string) ($_POST['password'] ?? '');
 
     // Use prepared statements to prevent SQL injection
     $stmt = $pdo->prepare("SELECT * FROM Staff WHERE Username = ? AND Status = 'Active'");
@@ -26,10 +30,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pdo->prepare("UPDATE Staff SET LastLogin = NOW() WHERE StaffID = ?")
             ->execute([$staff['StaffID']]);
 
-        // Password is correct, start a new session
+        // Password is correct, start a new session (new ID prevents session fixation)
+        session_regenerate_id(true);
+        csrf_rotate();
+        $_SESSION['last_activity'] = time();
         $_SESSION['staff_id'] = $staff['StaffID'];
         $_SESSION['staff_name'] = $staff['FirstName'] . ' ' . $staff['LastName'];
         $_SESSION['role_id'] = $staff['RoleID'];
+        unset($_SESSION['member_account_id'], $_SESSION['member_id'], $_SESSION['member_name'], $_SESSION['member_csrf_token']);
 
         // Set success status for toast
         $login_status = 'success';
@@ -88,6 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <p class="subtitle">Sign in to manage your gym.</p>
 
                 <form action="index.php" method="post" id="loginForm">
+                    <?= csrf_field() ?>
                     <div class="form-group">
                         <label for="username">Email address</label>
                         <div class="login-input-wrapper">
@@ -119,6 +128,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <button type="submit" class="sign-in-btn">Sign in <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
                 </form>
+                <p class="member-portal-entry" style="text-align:center;margin-top:18px;color:#64748b;font-size:13px;">
+                    Gym member? <a href="member/login.php" style="color:#0f766e;font-weight:600;">Sign in to your member portal</a>
+                </p>
                 <div class="login-secure-note"><span class="login-secure-rule"></span><i class="bi bi-shield-check" aria-hidden="true"></i><span>Secure access for your team.</span><span class="login-secure-rule"></span></div>
             </div>
         </div>

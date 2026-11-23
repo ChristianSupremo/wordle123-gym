@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "assets/css/style/admin_refinements.css"
+        ],
+        "createdAt": "2026-11-18T11:06:55.355Z",
+        "reason": "Claude triage: L160-161 are .att-scan-guide QR scanner corner brackets (36px L-shapes, commit 0a4f317), not card side-tab borders"
+      }
+    ]
+  }
+}

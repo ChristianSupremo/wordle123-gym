@@ -2,10 +2,15 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/table_sort_helper.php';
-check_login();
+require_permission('members.view');
 
 $action = $_GET['action'] ?? 'list';
 $member_id = $_GET['id'] ?? null;
+if ($action === 'add') {
+    require_permission('members.create');
+} elseif ($action === 'edit') {
+    require_permission('members.edit');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
     include 'controllers/member_save.php';
@@ -131,6 +136,16 @@ include 'includes/header.php';
                                title="View QR card" aria-label="View QR card for <?= htmlspecialchars($m['FirstName'] . ' ' . $m['LastName'], ENT_QUOTES, 'UTF-8') ?>">
                                 <i class="bi bi-qr-code"></i>
                             </a>
+                            <button type="button" class="action-btn" title="Create member portal invitation"
+                                    aria-label="Create member portal invitation"
+                                    onclick="createMemberInvitation(<?= (int) $m['MemberID'] ?>, <?= htmlspecialchars(json_encode($m['FirstName'] . ' ' . $m['LastName']), ENT_QUOTES, 'UTF-8') ?>)">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                            <button type="button" class="action-btn" title="Enable or disable member portal access"
+                                    aria-label="Manage member portal access"
+                                    onclick="manageMemberAccess(<?= (int) $m['MemberID'] ?>, <?= htmlspecialchars(json_encode($m['FirstName'] . ' ' . $m['LastName']), ENT_QUOTES, 'UTF-8') ?>)">
+                                <i class="bi bi-person-lock"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -158,3 +173,101 @@ include 'includes/header.php';
 <?php include 'includes/member_view_modal.php'; ?>
 <?php include 'includes/member_edit_modal.php'; ?>
 <?php include 'includes/member_add_modal.php'; ?>
+
+<!-- Member portal invitation modal -->
+<div id="memberInviteModal" class="member-invite-modal" aria-hidden="true">
+    <div class="member-invite-backdrop" onclick="closeMemberInviteModal()"></div>
+    <section class="member-invite-dialog" role="dialog" aria-modal="true" aria-labelledby="memberInviteTitle">
+        <button type="button" class="member-invite-close" onclick="closeMemberInviteModal()" aria-label="Close">&times;</button>
+        <h2 id="memberInviteTitle">Member portal invitation</h2>
+        <p id="memberInviteMessage">Generate a secure activation link for this member.</p>
+        <div id="memberInviteResult" hidden>
+            <label for="memberInviteLink">Activation link</label>
+            <div class="member-invite-link-row">
+                <input id="memberInviteLink" type="text" readonly>
+                <button type="button" class="add-member-btn" onclick="copyMemberInviteLink()">Copy link</button>
+            </div>
+            <small id="memberInviteExpiry"></small>
+            <p class="member-invite-note">Share this link with the member through your preferred channel. No email will be sent automatically. The link expires after 48 hours and can only be used once.</p>
+        </div>
+        <div id="memberInviteError" class="member-invite-error" hidden></div>
+        <div class="member-invite-actions">
+            <button type="button" class="filter-btn" onclick="closeMemberInviteModal()">Close</button>
+        </div>
+    </section>
+</div>
+<style>
+.member-invite-modal{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:20px}
+.member-invite-modal.is-open{display:flex}
+.member-invite-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65)}
+.member-invite-dialog{position:relative;width:min(560px,100%);background:var(--card-bg,#202b3b);color:var(--text-color,#fff);border:1px solid var(--border-color,#40506a);border-radius:12px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.member-invite-dialog h2{font-size:20px;margin:0 32px 10px 0}
+.member-invite-dialog p{color:var(--muted-text,#aab6c8);line-height:1.5}
+.member-invite-close{position:absolute;right:16px;top:12px;background:none;border:0;color:inherit;font-size:28px;cursor:pointer}
+.member-invite-dialog label{display:block;margin:18px 0 8px;font-size:13px}
+.member-invite-link-row{display:flex;gap:8px}
+.member-invite-link-row input{min-width:0;flex:1;background:var(--input-bg,#182333);color:inherit;border:1px solid var(--border-color,#40506a);border-radius:6px;padding:10px}
+.member-invite-note{font-size:12px;margin-top:14px}
+.member-invite-error{margin-top:16px;color:#ff7777}
+.member-invite-actions{display:flex;justify-content:flex-end;margin-top:22px}
+@media(max-width:520px){.member-invite-link-row{flex-direction:column}}
+</style>
+<script>
+async function createMemberInvitation(memberId, memberName) {
+    const modal=document.getElementById('memberInviteModal');
+    const message=document.getElementById('memberInviteMessage');
+    const result=document.getElementById('memberInviteResult');
+    const error=document.getElementById('memberInviteError');
+    modal.classList.add('is-open'); modal.setAttribute('aria-hidden','false');
+    result.hidden=true; error.hidden=true;
+    message.textContent='Creating an invitation for '+memberName+'...';
+    try {
+        const endpoint='controllers/member_invite.php';
+        const tokenResponse=await fetch(endpoint,{credentials:'same-origin',cache:'no-store'});
+        const tokenData=await tokenResponse.json();
+        if(!tokenResponse.ok||!tokenData.success) throw new Error(tokenData.message||'Could not prepare the invitation.');
+        const form=new FormData();
+        form.append('csrf_token',tokenData.csrf_token); form.append('member_id',String(memberId));
+        const response=await fetch(endpoint,{method:'POST',body:form,credentials:'same-origin'});
+        const data=await response.json();
+        if(!response.ok||!data.success) throw new Error(data.message||'Could not create the invitation.');
+        document.getElementById('memberInviteLink').value=new URL(data.activation_path,window.location.href).href;
+        document.getElementById('memberInviteExpiry').textContent='Expires: '+data.expires_at;
+        result.hidden=false; message.textContent='An activation link has been created for '+data.member_name+'.';
+    } catch(err) { message.textContent='The invitation could not be created.'; error.textContent=err.message; error.hidden=false; }
+}
+async function manageMemberAccess(memberId, memberName) {
+    const endpoint='controllers/member_account_status.php';
+    try {
+        const res=await fetch(endpoint+'?member_id='+encodeURIComponent(memberId),{credentials:'same-origin',cache:'no-store'});
+        const info=await res.json();
+        if(!res.ok||!info.success) throw new Error(info.message||'Could not load portal access.');
+        if(!info.has_account) { toast.error(memberName+' does not have a portal account yet. Use the invite button to create one.'); return; }
+        const disabling=info.status==='Active';
+        const ok=await confirm.show({
+            title: disabling ? 'Disable Portal Access' : 'Enable Portal Access',
+            message: disabling ? memberName+' will be signed out and unable to use the member portal.' : 'Allow '+memberName+' to sign in to the member portal again?',
+            confirmText: disabling ? 'Disable' : 'Enable',
+            cancelText: 'Cancel',
+            type: disabling ? 'warning' : 'info'
+        });
+        if(!ok) return;
+        const form=new FormData();
+        form.append('csrf_token',info.csrf_token); form.append('member_id',String(memberId));
+        form.append('status', disabling ? 'Disabled' : 'Active');
+        const r2=await fetch(endpoint,{method:'POST',body:form,credentials:'same-origin'});
+        const d=await r2.json();
+        if(!r2.ok||!d.success) throw new Error(d.message||'Could not update portal access.');
+        toast.success(d.message);
+    } catch(err) { toast.error(err.message); }
+}
+async function copyMemberInviteLink() {
+    const input=document.getElementById('memberInviteLink');
+    try { await navigator.clipboard.writeText(input.value); }
+    catch(err) { input.select(); document.execCommand('copy'); }
+}
+function closeMemberInviteModal() {
+    const modal=document.getElementById('memberInviteModal');
+    modal.classList.remove('is-open'); modal.setAttribute('aria-hidden','true');
+}
+</script>
