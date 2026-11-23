@@ -2,7 +2,7 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/staff_modal_helpers.php';
-check_login();
+require_permission('staff.view');
 
 // Handle search and filter
 $status_filter = $_GET['status_filter'] ?? 'All';
@@ -58,9 +58,11 @@ include 'includes/header.php';
         </div>
     </div>
 
+    <?php if (has_permission('staff.create')): ?>
     <a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddStaffModal();">
         <i class="bi bi-plus-lg"></i> Add Staff
     </a>
+    <?php endif; ?>
 </div>
 
 <!-- Staff Table -->
@@ -96,7 +98,7 @@ include 'includes/header.php';
                         <td><?= htmlspecialchars($staff['Email']) ?></td>
 
                         <td>
-                            <span class="role-badge <?= getRoleBadgeClass($staff['AccessLevel']) ?>">
+                            <span class="role-badge <?= getRoleBadgeClass($staff['RoleName']) ?>">
                                 <?= htmlspecialchars($staff['RoleName']) ?>
                             </span>
                         </td>
@@ -117,15 +119,17 @@ include 'includes/header.php';
                                     <i class="bi bi-eye"></i>
                                 </button>
 
+                                <?php if (has_permission('staff.edit')): ?>
                                 <button class="action-btn edit-member-btn" 
                                         onclick="editStaff(<?= $staff['StaffID'] ?>)"
                                         title="Edit Staff">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                <?php endif; ?>
 
-                                <?php if ($staff['StaffID'] != $_SESSION['staff_id']): ?>
+                                <?php if ($staff['StaffID'] != $_SESSION['staff_id'] && has_permission('staff.toggle_status')): ?>
                                     <button class="action-btn delete-member-btn"
-                                            onclick="toggleStaffStatus(<?= $staff['StaffID'] ?>, '<?= $staff['Status'] ?>', '<?= htmlspecialchars($staff['FullName']) ?>')"
+                                            onclick="toggleStaffStatus(<?= $staff['StaffID'] ?>, '<?= $staff['Status'] === 'Active' ? 'Active' : 'Inactive' ?>', <?= htmlspecialchars(json_encode($staff['FullName']), ENT_QUOTES, 'UTF-8') ?>)"
                                             title="<?= $staff['Status'] == 'Active' ? 'Deactivate' : 'Activate' ?>">
                                         <i class="bi bi-<?= $staff['Status'] == 'Active' ? 'slash-circle' : 'check-circle' ?>"></i>
                                     </button>

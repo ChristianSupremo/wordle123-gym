@@ -4,14 +4,10 @@
 //   POST member_id, status (Active|Disabled), csrf_token
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
-check_login();
+require_permission('members.edit');
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-
-if (empty($_SESSION['member_invite_csrf'])) {
-    $_SESSION['member_invite_csrf'] = bin2hex(random_bytes(32));
-}
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -29,7 +25,7 @@ try {
             'has_account' => (bool) $acc,
             'status' => $acc['AccountStatus'] ?? null,
             'last_login' => $acc['LastLogin'] ?? null,
-            'csrf_token' => $_SESSION['member_invite_csrf'],
+            'csrf_token' => csrf_token(),
         ]);
         exit;
     }
@@ -40,13 +36,7 @@ try {
         exit;
     }
 
-    $csrf = $_POST['csrf_token'] ?? '';
-    if (!is_string($csrf) || !hash_equals($_SESSION['member_invite_csrf'], $csrf)) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Invalid request token. Refresh and try again.']);
-        exit;
-    }
-
+    // CSRF token already validated by require_permission() -> check_login().
     $memberId = filter_input(INPUT_POST, 'member_id', FILTER_VALIDATE_INT);
     $status = $_POST['status'] ?? '';
     if (!$memberId || $memberId < 1 || !in_array($status, ['Active', 'Disabled'], true)) {

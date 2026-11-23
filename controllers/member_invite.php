@@ -1,18 +1,14 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
-check_login();
+require_permission('members.edit');
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-if (empty($_SESSION['member_invite_csrf'])) {
-    $_SESSION['member_invite_csrf'] = bin2hex(random_bytes(32));
-}
-
 // Authenticated staff can retrieve a CSRF token before submitting an invitation.
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo json_encode(['success' => true, 'csrf_token' => $_SESSION['member_invite_csrf']]);
+    echo json_encode(['success' => true, 'csrf_token' => csrf_token()]);
     exit;
 }
 
@@ -22,13 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$csrf = $_POST['csrf_token'] ?? '';
-if (!is_string($csrf) || !hash_equals($_SESSION['member_invite_csrf'], $csrf)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Invalid request token. Refresh and try again.']);
-    exit;
-}
-
+// CSRF token already validated by require_permission() -> check_login().
 $memberId = filter_input(INPUT_POST, 'member_id', FILTER_VALIDATE_INT);
 if (!$memberId || $memberId < 1) {
     http_response_code(400);

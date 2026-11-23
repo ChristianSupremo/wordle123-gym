@@ -1,7 +1,7 @@
 <?php
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-check_login();
+require_permission('memberships.view');
 
 header('Content-Type: application/json');
 

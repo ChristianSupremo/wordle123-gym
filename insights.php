@@ -2,7 +2,7 @@
 // insights.php - attendance analytics + at-risk members
 require_once 'config/db.php';
 require_once 'includes/functions.php';
-check_login();
+require_permission('insights.view');
 
 // ---- At-risk members: active membership + warning signs from attendance ----
 $rows = $pdo->query("

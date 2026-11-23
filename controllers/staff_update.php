@@ -6,7 +6,8 @@
 
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-check_login();
+require_once '../includes/helpers/staff_modal_helpers.php';
+require_permission('staff.edit');
 
 header('Content-Type: application/json');
 
@@ -54,6 +55,32 @@ try {
 
     if (!$existing_staff) {
         echo json_encode(['success' => false, 'message' => 'Staff member not found']);
+        exit;
+    }
+
+    // Role and status changes need their own permissions and must be valid values
+    $stmt = $pdo->prepare("SELECT RoleID FROM Roles WHERE RoleID = ?");
+    $stmt->execute([$role_id]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'Invalid role selected']);
+        exit;
+    }
+    if (!in_array($status, ['Active', 'Inactive'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid status']);
+        exit;
+    }
+    if ((int) $role_id !== (int) $existing_staff['RoleID']) {
+        require_permission('staff.assign_role');
+    }
+    if ($status !== $existing_staff['Status']) {
+        require_permission('staff.toggle_status');
+        if ($status === 'Inactive' && (int) $staff_id === (int) $_SESSION['staff_id']) {
+            echo json_encode(['success' => false, 'message' => 'You cannot deactivate your own account']);
+            exit;
+        }
+    }
+    if (wouldRemoveLastAdmin($pdo, $staff_id, $role_id, $status)) {
+        echo json_encode(['success' => false, 'message' => 'At least one active Admin is required. Assign another Admin first.']);
         exit;
     }
 

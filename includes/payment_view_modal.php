@@ -139,7 +139,7 @@ async function viewPaymentDetails(paymentId) {
         
     } catch (error) {
         showErrorState('payment-details-loading', 'payment-details', 'payment-details-error');
-        if (window.toast) {
+        if (typeof toast !== 'undefined') { // script.js declares `const toast`, which is not a window property
             toast.error('Failed to load payment details. Please try again.', 5000);
         }
     }

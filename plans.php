@@ -2,13 +2,28 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/plan_modal_helpers.php';
-check_login();
+require_permission('plans.view');
 
 $action = $_GET['action'] ?? 'list';
 $plan_id = $_GET['id'] ?? null;
 
+// --- Handle Activate/Deactivate (POST only, so it is CSRF-protected) ---
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'toggle_status') {
+    require_permission('plans.manage');
+    $plan_id = filter_var($_POST['plan_id'] ?? null, FILTER_VALIDATE_INT);
+    if ($plan_id) {
+        $stmt = $pdo->prepare("UPDATE Plan SET IsActive = NOT IsActive WHERE PlanID = ?");
+        $stmt->execute([$plan_id]);
+        $_SESSION['message'] = "Plan status updated successfully!";
+        $_SESSION['message_type'] = "success";
+    }
+    header('Location: plans.php');
+    exit();
+}
+
 // --- Handle Form Submissions (Add/Edit) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    require_permission('plans.manage');
     $plan_id = $_POST['plan_id'] ?? null;
     $plan_name = trim($_POST['PlanName']);
     $description = trim($_POST['Description']);
@@ -44,18 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// --- Handle Activate/Deactivate ---
-if ($action === 'toggle_status' && $plan_id) {
-    $sql = "UPDATE Plan SET IsActive = NOT IsActive WHERE PlanID = ?";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$plan_id]);
-    
-    $_SESSION['message'] = "Plan status updated successfully!";
-    $_SESSION['message_type'] = "success";
-    header('Location: plans.php');
-    exit();
-}
-
 // Fetch plans for list view
 $status_filter = $_GET['status_filter'] ?? 'All';
 $search = trim($_GET['search'] ?? '');
@@ -89,7 +92,7 @@ $plans = $stmt->fetchAll();
 <link rel="stylesheet" href="assets/css/style/plan_modals.css">
 
 <div class="page-header">
-    <h1 class="page-title">Plan Management</h1>
+    <h1 class="page-title"><?= has_permission('plans.manage') ? 'Plan Management' : 'Membership Plans' ?></h1>
 </div>
 
 <!-- Search, Filter, Add -->
@@ -101,11 +104,11 @@ $plans = $stmt->fetchAll();
         </div>
 
         <div class="filter-dropdown">
-            <button class="filter-btn" onclick="toggleFilter()">
+            <button class="filter-btn" onclick="toggleFilter('plans')">
                 <i class="bi bi-funnel"></i> Filter <i class="bi bi-chevron-down"></i>
             </button>
 
-            <div class="filter-dropdown-content" id="filterDropdown">
+            <div class="filter-dropdown-content" id="filterDropdown_plans">
                 <form method="GET" action="plans.php">
                     <input type="hidden" name="action" value="list">
 
@@ -131,9 +134,11 @@ $plans = $stmt->fetchAll();
         </div>
     </div>
 
+    <?php if (has_permission('plans.manage')): ?>
     <a href="#" class="add-member-btn" onclick="event.preventDefault(); openAddPlanModal();">
         <i class="bi bi-plus-lg"></i> Add New Plan
     </a>
+    <?php endif; ?>
 </div>
 
 <!-- Plans Table -->
@@ -190,15 +195,20 @@ $plans = $stmt->fetchAll();
                                 <button class="action-btn" onclick="viewPlan(<?= $p['PlanID'] ?>)" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                <?php if (has_permission('plans.manage')): ?>
                                 <button class="action-btn" onclick="editPlan(<?= $p['PlanID'] ?>)" title="Edit Plan">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <a href="plans.php?action=toggle_status&id=<?= $p['PlanID'] ?>" 
-                                   class="action-btn" 
-                                   title="<?= $p['IsActive'] ? 'Deactivate' : 'Activate' ?>"
-                                   onclick="return handleToggleStatus(event, <?= $p['IsActive'] ?>)">
-                                    <i class="bi bi-<?= $p['IsActive'] ? 'toggle-off' : 'toggle-on' ?>"></i>
-                                </a>
+                                <form method="post" action="plans.php" style="display: contents;"
+                                      onsubmit="return handleToggleStatus(event, <?= $p['IsActive'] ? 1 : 0 ?>)">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="toggle_status">
+                                    <input type="hidden" name="plan_id" value="<?= (int) $p['PlanID'] ?>">
+                                    <button type="submit" class="action-btn" title="<?= $p['IsActive'] ? 'Deactivate' : 'Activate' ?>">
+                                        <i class="bi bi-<?= $p['IsActive'] ? 'toggle-off' : 'toggle-on' ?>"></i>
+                                    </button>
+                                </form>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -226,26 +236,15 @@ $plans = $stmt->fetchAll();
 </div>
 
 <script>
-// Toggle filter dropdown
-function toggleFilter() {
-    document.getElementById('filterDropdown').classList.toggle('show');
-}
+// Filter dropdown open/close is handled by assets/js/global_filter.js (toggleFilter('plans')).
 
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const filterBtn = document.querySelector('.filter-btn');
-    const dropdown = document.getElementById('filterDropdown');
-    if (!filterBtn.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.classList.remove('show');
-    }
-});
-
-// Search functionality with debounce
-let searchTimeout;
+// Search functionality with debounce (own name: global_filter.js declares searchTimeout)
+let planSearchTimeout;
 document.getElementById('searchInput').addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        window.location.href = 'plans.php?search=' + encodeURIComponent(this.value) + '&status_filter=<?= $status_filter ?>';
+    clearTimeout(planSearchTimeout);
+    planSearchTimeout = setTimeout(() => {
+        window.location.href = 'plans.php?search=' + encodeURIComponent(this.value)
+            + '&status_filter=' + encodeURIComponent(<?= json_encode((string) $status_filter, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
     }, 500);
 });
 
@@ -263,7 +262,7 @@ async function handleToggleStatus(event, isActive) {
     });
     
     if (confirmed) {
-        window.location.href = event.target.closest('a').href;
+        event.target.submit();
     }
 }
 </script>

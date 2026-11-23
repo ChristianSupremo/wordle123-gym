@@ -2,10 +2,15 @@
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 require_once 'includes/helpers/table_sort_helper.php';
-check_login();
+require_permission('members.view');
 
 $action = $_GET['action'] ?? 'list';
 $member_id = $_GET['id'] ?? null;
+if ($action === 'add') {
+    require_permission('members.create');
+} elseif ($action === 'edit') {
+    require_permission('members.edit');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
     include 'controllers/member_save.php';

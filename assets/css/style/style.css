@@ -2323,6 +2323,11 @@ input[type="number"]::-webkit-inner-spin-button {
     margin-bottom: 20px;
 }
 
+/* ConfirmDialog icon colours (script.js uses these class names; readable in light and dark mode) */
+.confirm-icon .text-warning { color: #f59e0b; }
+.confirm-icon .text-danger { color: #ef4444; }
+.confirm-icon .text-info { color: #3b82f6; }
+
 .confirm-title {
     font-size: 24px;
     font-weight: 700;

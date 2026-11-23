@@ -2,7 +2,7 @@
 // controllers/member_update.php
 require_once '../config/db.php';
 require_once '../includes/functions.php';
-check_login();
+require_permission('members.edit');
 
 header('Content-Type: application/json');
 

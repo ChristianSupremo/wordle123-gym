@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/gcash_submission_helpers.php';
 $isStaff = !empty($_SESSION['staff_id']);
 $isMember = !$isStaff && !empty($_SESSION['member_account_id']) && !empty($_SESSION['member_id']);
 if ($isStaff) {
-    check_login();
+    require_permission('payments.view');
 } elseif ($isMember) {
     check_member_login($pdo);
 } else {

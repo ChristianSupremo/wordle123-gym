@@ -2,13 +2,10 @@
 // attendance.php - QR / ID check-in and check-out
 require_once 'config/db.php';
 require_once 'includes/functions.php';
-check_login();
+require_permission('attendance.manage');
 
 $staff_id = $_SESSION['staff_id'] ?? null;
 $result = null;
-if (empty($_SESSION['attendance_csrf'])) {
-    $_SESSION['attendance_csrf'] = bin2hex(random_bytes(32));
-}
 
 // Show the result of the previous scan once (post/redirect/get avoids duplicate check-ins on refresh).
 if (!empty($_SESSION['attendance_flash'])) {
@@ -17,11 +14,7 @@ if (!empty($_SESSION['attendance_flash'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!hash_equals($_SESSION['attendance_csrf'], $_POST['csrf_token'] ?? '')) {
-        http_response_code(403);
-        exit('Invalid request token. Please reload the page and try again.');
-    }
-
+    // CSRF token already validated by require_permission() -> check_login().
     // QR payload is "GYM-<MemberID>"; typing a plain numeric ID also works.
     $raw_member_id = trim($_POST['member_id'] ?? '');
     if (preg_match('/^(?:GYM[- ]?)?(\\d+)$/i', $raw_member_id, $matches)) {
@@ -139,7 +132,7 @@ function att_duration($in, $out)
     <?php endif; ?>
 
     <form method="post" id="checkinForm" autocomplete="off">
-      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['attendance_csrf'], ENT_QUOTES, 'UTF-8'); ?>">
+      <?= csrf_field() ?>
       <label class="att-label" for="member_id">Member ID or QR code</label>
       <div class="att-scan-row">
         <div class="att-scan-input">

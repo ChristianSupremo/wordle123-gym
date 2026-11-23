@@ -34,7 +34,17 @@
             type: "warning"
         }).then((ok) => {
             if (ok) {
-                window.location.href = "logout.php";
+                // Logout is POST + CSRF token (see logout.php)
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = 'logout.php';
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrf_token';
+                input.value = document.querySelector('meta[name="csrf-token"]').content;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
             }
         });
     }

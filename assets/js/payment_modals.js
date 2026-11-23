@@ -297,48 +297,48 @@ function showErrorState(loadingId, formId, errorId) {
 }
 
 /**
- * Handle form submission with loading state
+ * Handle form submission with loading state.
+ * payments.php answers with JSON: 200 {success: true, message} or 4xx/500 {success: false, message}.
+ * On success the modal closes and the page reloads to show the updated row.
  */
-function handleFormSubmit(formId, buttonId, successMessage, endpoint = 'payments.php') {
+function handleFormSubmit(formId, buttonId, successMessage, endpoint = 'payments.php', modal = null) {
     const form = document.getElementById(formId);
     const button = document.getElementById(buttonId);
-    
-    form.addEventListener('submit', function(e) {
+
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+        if (button.disabled) return; // a save is already in flight
+
         const formData = new FormData(this);
         const originalButtonContent = button.innerHTML;
-        
+
         // Disable button and show loading
         button.disabled = true;
         button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-        
-        fetch(endpoint, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.redirected) {
-                if (window.toast) {
+
+        let result = null;
+        try {
+            const response = await fetch(endpoint, { method: 'POST', body: formData });
+            result = await response.json().catch(() => null);
+            if (response.ok && result && result.success) {
+                if (typeof toast !== 'undefined') { // script.js declares `const toast`, which is not a window property
                     toast.success(successMessage, 3000);
                 }
-                setTimeout(() => {
-                    window.location.href = response.url;
-                }, 1000);
-            } else {
-                return response.text().then(text => {
-                    throw new Error('Operation failed');
-                });
+                if (modal) {
+                    modal.close();
+                }
+                setTimeout(() => window.location.reload(), 1000);
+                return; // keep the button disabled until the reload
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
-            if (window.toast) {
-                toast.error('Operation failed. Please try again.', 5000);
-            }
-            button.disabled = false;
-            button.innerHTML = originalButtonContent;
-        });
+        }
+
+        if (typeof toast !== 'undefined') { // script.js declares `const toast`, which is not a window property
+            toast.error((result && result.message) || 'Could not save. Check your connection and try again.', 5000);
+        }
+        button.disabled = false;
+        button.innerHTML = originalButtonContent;
     });
 }
 

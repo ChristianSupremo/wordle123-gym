@@ -8,7 +8,13 @@ require_once '../config/db.php';
 require_once '../includes/functions.php';
 
 // Basic security check
-check_login();
+require_permission('memberships.edit');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
+    exit;
+}
 
 // Get the data from the POST request
  $membership_id = $_POST['membership_id'] ?? null;

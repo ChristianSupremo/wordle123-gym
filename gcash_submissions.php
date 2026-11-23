@@ -2,25 +2,19 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/gcash_submission_helpers.php';
-check_login();
+require_permission('payments.view');
 
 if (empty($_SESSION['staff_id'])) {
     http_response_code(403);
     exit('Staff access required.');
 }
-if (empty($_SESSION['gcash_staff_csrf'])) {
-    $_SESSION['gcash_staff_csrf'] = bin2hex(random_bytes(32));
-}
-$csrfToken = $_SESSION['gcash_staff_csrf'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_permission('payments.create');
     $submissionId = filter_var($_POST['submission_id'] ?? null, FILTER_VALIDATE_INT);
     $decision = $_POST['decision'] ?? '';
     $remarks = trim((string) ($_POST['remarks'] ?? ''));
     try {
-        if (!is_string($_POST['csrf_token'] ?? null) || !hash_equals($csrfToken, $_POST['csrf_token'])) {
-            throw new RuntimeException('Invalid security token. Refresh the page and try again.');
-        }
         if (!$submissionId || !in_array($decision, ['approve', 'reject'], true)) {
             throw new RuntimeException('Invalid review request.');
         }
@@ -173,13 +167,13 @@ include __DIR__ . '/includes/header.php';
                     </dl>
 
                     <form class="gcash-review" method="POST" action="gcash_submissions.php">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="submission_id" value="<?= $sid ?>">
                         <label class="form-label-modern" for="remarks_<?= $sid ?>">Staff remarks <span class="gcash-muted">(required to reject)</span></label>
                         <textarea class="form-control-modern" id="remarks_<?= $sid ?>" name="remarks" rows="3" maxlength="2000" placeholder="Add a note for the member"></textarea>
                         <div class="gcash-actions">
-                            <button class="btn-secondary-modern gcash-reject" type="submit" name="decision" value="reject" onclick="return confirm('Reject this submission? A reason is required.')"><i class="bi bi-x-circle"></i> Reject</button>
-                            <button class="btn-primary-modern" type="submit" name="decision" value="approve" onclick="return confirm('Approve this submission and create one completed GCash payment record?')"><i class="bi bi-check-circle"></i> Approve payment</button>
+                            <button class="btn-secondary-modern gcash-reject" type="submit" name="decision" value="reject"><i class="bi bi-x-circle"></i> Reject</button>
+                            <button class="btn-primary-modern" type="submit" name="decision" value="approve"><i class="bi bi-check-circle"></i> Approve payment</button>
                         </div>
                     </form>
                 </div>
@@ -194,4 +188,47 @@ include __DIR__ . '/includes/header.php';
         </div>
     <?php endif; ?>
 </div>
+<script>
+// Approve/Reject confirmation. script.js declares a global `const confirm` (ConfirmDialog) that shadows window.confirm,
+// so inline `return confirm(...)` threw and the form submitted without asking.
+document.querySelectorAll('form.gcash-review').forEach(function (form) {
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault(); // nothing is sent until the user confirms
+        const button = e.submitter;
+        if (!button || form.dataset.submitting === '1') return;
+
+        const reject = button.value === 'reject';
+        const remarks = form.querySelector('textarea[name="remarks"]');
+        if (reject && remarks.value.trim() === '') {
+            toast.error('Add a reason before rejecting a submission.');
+            remarks.focus();
+            return;
+        }
+
+        const ok = await confirm.show({
+            title: reject ? 'Reject GCash Submission' : 'Approve GCash Payment',
+            message: reject
+                ? 'Reject this submission? The member will see your remarks.'
+                : 'Approve this submission and create one completed GCash payment record?',
+            confirmText: reject ? 'Reject' : 'Approve',
+            cancelText: 'Cancel',
+            type: reject ? 'danger' : 'info'
+        });
+        if (!ok || form.dataset.submitting === '1') return;
+
+        // form.submit() skips the clicked button's name/value, so carry the decision in a hidden field.
+        form.dataset.submitting = '1';
+        let decision = form.querySelector('input[type="hidden"][name="decision"]');
+        if (!decision) {
+            decision = document.createElement('input');
+            decision.type = 'hidden';
+            decision.name = 'decision';
+            form.appendChild(decision);
+        }
+        decision.value = button.value;
+        form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; });
+        form.submit(); // csrf_token is already a field in this form
+    });
+});
+</script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
